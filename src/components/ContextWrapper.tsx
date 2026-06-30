@@ -30,6 +30,9 @@ export const ContextWrapper = (props: PropsWithChildren) => {
             setParty(party);
             // Keep player data current for the session (name, colour, role can change)
             OBR.player.onChange((updatedPlayer) => setPlayer(updatedPlayer));
+            // Keep the party roster current (joins, leaves, role/colour changes).
+            // Owned here so there is exactly one subscription, not one per consumer.
+            OBR.party.onChange((updatedParty) => setParty(updatedParty));
 
             // What's New modal (GM only, fires once per new version)
             if (role === "GM") {
@@ -60,7 +63,6 @@ export const ContextWrapper = (props: PropsWithChildren) => {
                     <PartyContext.Provider
                         value={{
                             players: party,
-                            _setPlayers: setParty,
                             nonGMPlayers:
                                 [player, ...(party || [])].filter((player): player is Player =>
                                     Boolean(player && player.role !== 'GM'),

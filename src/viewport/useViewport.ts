@@ -195,18 +195,36 @@ export const useViewport = () => {
         });
     }, [currentUserId]);
 
+    // Read the authoritative preset list straight from the scene immediately
+    // before a write, so a concurrent save from another client is merged rather
+    // than clobbered. Falls back to our last-known-good list only if the scene
+    // somehow holds unreadable data mid-session.
+    const readCurrentStarred = async (): Promise<Array<StarredBox | StarredLegacy>> => {
+        const sceneMetadata = await OBR.scene.getMetadata();
+        if (validMetadata(sceneMetadata)) {
+            return sceneMetadata[metadataId].starredViewports ?? [];
+        }
+        if (metadataId in sceneMetadata) {
+            const raw = (sceneMetadata as Record<string, unknown>)[metadataId];
+            if (canSalvageViewportMetadata(raw)) return salvageStars(raw.starredViewports);
+            return starred(metadata);
+        }
+        return [];
+    };
+
     const starViewport = async (viewportName: string) => {
         if (status === 'error') return;
         const trimmed = viewportName.trim();
         if (!trimmed) throw new Error('Viewport name must not be blank');
-        if (starred(metadata).some((v) => v.name === trimmed))
-            throw new Error(`A viewport named "${trimmed}" already exists`);
         const { min, max } = await getViewportBounds();
+        const current = await readCurrentStarred();
+        if (current.some((v) => v.name === trimmed))
+            throw new Error(`A viewport named "${trimmed}" already exists`);
 
         await OBR.scene.setMetadata({
             [metadataId]: {
                 starredViewports: [
-                    ...starred(metadata),
+                    ...current,
                     constructStarredBox({ currentUserId, viewportName: trimmed, min, max }),
                 ],
             },
@@ -214,8 +232,9 @@ export const useViewport = () => {
     };
     const deleteViewport = async (viewport: StarredLegacy | StarredBox) => {
         if (status === 'error') return;
+        const current = await readCurrentStarred();
         await OBR.scene.setMetadata({
-            [metadataId]: { starredViewports: applyViewportDelete(starred(metadata), viewport.id) },
+            [metadataId]: { starredViewports: applyViewportDelete(current, viewport.id) },
         });
     };
 
@@ -251,8 +270,8 @@ export const useViewport = () => {
 
     const overwriteViewport = async ({ id: idToBeOverwritten }: { id: string }) => {
         if (status === 'error') return;
-        const existingViewports = starred(metadata);
-        const viewportToBeDeleted = existingViewports.find(({ id }) => id === idToBeOverwritten);
+        const current = await readCurrentStarred();
+        const viewportToBeDeleted = current.find(({ id }) => id === idToBeOverwritten);
         if (!viewportToBeDeleted) {
             throw new Error(
                 `Overwrite Viewport Error: No viewport with id ${idToBeOverwritten} exists`,
@@ -262,7 +281,7 @@ export const useViewport = () => {
         await OBR.scene.setMetadata({
             [metadataId]: {
                 starredViewports: [
-                    ...starred(metadata).filter(({ id }) => id !== idToBeOverwritten),
+                    ...current.filter(({ id }) => id !== idToBeOverwritten),
                     constructStarredBox({
                         viewportName: viewportToBeDeleted.name,
                         min,
