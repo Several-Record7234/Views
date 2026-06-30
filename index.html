@@ -6,8 +6,14 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Views</title>
     </head>
-    <body>
-        <div id="app"></div>
+    <body style="margin: 0; background: #1e1e2e; color: #cdd6f4; font-family: 'Roboto', Helvetica, Arial, sans-serif;">
+        <div id="app">
+            <div id="preload" style="display:flex;align-items:center;justify-content:center;min-height:200px;gap:10px;">
+                <link rel="stylesheet" href="/preload.css" />
+                <div class="sp"></div>
+                <span style="color:#a6adc8;font-size:13px;">Loading…</span>
+            </div>
+        </div>
         <script type="module" src="/src/main.ts"></script>
     </body>
 </html>

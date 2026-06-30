@@ -2,7 +2,7 @@
   "name": "Views",
   "version": "0.1.0",
   "manifest_version": 1,
-  "author": "Andrew C, based on Viewport Presets by Omar Benmegdoul",
+  "author": "Andrew C, after Viewport Presets by Omar B",
   "description": "Easily save and jump to areas of a scene",
   "icon": "/icon.svg",
   "action": {
