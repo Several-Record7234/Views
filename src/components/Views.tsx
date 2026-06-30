@@ -41,6 +41,23 @@ const Content = () => {
     const [showFilters, setShowFilters] = useState<boolean>(false);
     const [showHelp, setShowHelp] = useState<boolean>(false);
 
+    // Group presets by owner in a single pass. Presets whose owner is absent from
+    // the party (no playerId, or an id not in allPlayers) fall into the unowned
+    // bucket; everything else is keyed by playerId for O(1) per-player lookup.
+    type Preset = (typeof starredViewports)[number];
+    const allPlayerIds = new Set(allPlayers.map(({ id }) => id));
+    const presetsByPlayer = new Map<string, Preset[]>();
+    const unownedPresets: Preset[] = [];
+    for (const viewport of starredViewports) {
+        if (viewport.playerId && allPlayerIds.has(viewport.playerId)) {
+            const bucket = presetsByPlayer.get(viewport.playerId);
+            if (bucket) bucket.push(viewport);
+            else presetsByPlayer.set(viewport.playerId, [viewport]);
+        } else {
+            unownedPresets.push(viewport);
+        }
+    }
+
     return (
         <div>
             <section className="extension-section">
@@ -137,7 +154,7 @@ const Content = () => {
                                 currentUser,
                                 deleteViewport,
                                 color: player.color,
-                                viewports: starredViewports.filter((v) => v.playerId === player.id),
+                                viewports: presetsByPlayer.get(player.id) ?? [],
                                 jumpTo,
                                 key: player.id,
                             }}
@@ -147,11 +164,7 @@ const Content = () => {
                     {...{
                         currentUser,
                         deleteViewport,
-                        viewports: starredViewports.filter(
-                            (v) =>
-                                !v?.playerId ||
-                                !allPlayers.map(({ id }) => id).includes(v?.playerId),
-                        ),
+                        viewports: unownedPresets,
                         jumpTo,
                     }}
                 />
