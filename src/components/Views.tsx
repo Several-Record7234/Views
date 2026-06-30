@@ -31,6 +31,7 @@ const Content = () => {
         filterAbsent,
         showAbsentPlayers,
         jumpToPlayerItems,
+        metadataError,
     } = useViewport();
 
     const [draftViewportName, setDraftViewportName] = useState<string>('');
@@ -156,6 +157,12 @@ const Content = () => {
                 />
             </ul>
             <section className="extension-section">
+                {metadataError && (
+                    <div className="metadata-error" role="alert">
+                        This Scene's saved viewports could not be read and may be corrupted. Saving
+                        is disabled to avoid overwriting them. Try reloading the Scene.
+                    </div>
+                )}
                 <form
                     className="row"
                     onSubmit={async (e) => {
@@ -169,12 +176,14 @@ const Content = () => {
                         value={draftViewportName}
                         onChange={(ev) => setDraftViewportName(ev.target.value)}
                         className="wide-cell"
+                        disabled={metadataError}
                     />
                     <Button
                         aria-label="Save this viewport"
                         className="narrow-cell"
                         type="submit"
                         disabled={
+                            metadataError ||
                             !draftViewportName ||
                             starredViewports.map(({ name }) => name).includes(draftViewportName)
                         }>

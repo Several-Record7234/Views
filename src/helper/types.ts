@@ -1,6 +1,11 @@
 import { Vector2, ViewportTransform } from '@owlbear-rodeo/sdk';
 
-export const metadataId = 'com.omarbenmegdoul.jumpToViewport3/metadata';
+export const metadataId = 'dev.views/metadata';
+/**
+ * Storage key used by the original jump-to-viewport extension. Read only, for
+ * a one-time import into our own namespace; never written to.
+ */
+export const legacyMetadataId = 'com.omarbenmegdoul.jumpToViewport3/metadata';
 export interface SceneMetadata {
     [metadataId]: {
         starredViewports: Array<StarredBox | StarredLegacy> | undefined;

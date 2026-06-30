@@ -5,8 +5,11 @@ import {
     StarredBox,
     StarredLegacy,
     UserFilter,
+    canSalvageViewportMetadata,
     isStarredBox,
     isStarredLegacy,
+    isValidStar,
+    legacyMetadataId,
     metadataId,
     validMetadata,
 } from '../helper/types';
@@ -23,6 +26,11 @@ const reset = async () => {
 
 const starred = (metadata: SceneMetadata | null) =>
     metadata && metadata[metadataId].starredViewports ? metadata[metadataId].starredViewports : [];
+
+// Keep only the entries we can parse, discarding broken ones rather than
+// rejecting the whole list.
+const salvageStars = (value: unknown[] | undefined): Array<StarredBox | StarredLegacy> =>
+    Array.isArray(value) ? value.filter(isValidStar) : [];
 
 const defaultFilters: UserFilter = { players: {}, absents: true };
 
@@ -107,25 +115,69 @@ export const useViewport = () => {
     const { id: currentUserId } = currentUser;
     const { nonGMPlayers } = usePartyContext();
     const [metadata, setMetadata] = useState<SceneMetadata>(defaultSceneMetadata);
+    // 'error' means the scene held data under our key that we could not parse;
+    // writes are blocked in that state so we never clobber unreadable presets.
+    const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
     const [localFilters, setLocalFilters] = useState<UserFilter>(() =>
         readLocalFilters(currentUserId),
     );
     useEffect(() => {
+        // Copy a user's prior filter prefs into localStorage on first sight,
+        // unless they already have local prefs. Used for both our own legacy
+        // (in-metadata) filters and those imported from jump-to-viewport.
+        const migrateLegacyFilters = (filters: Record<string, UserFilter> | undefined) => {
+            const legacyFilter = filters?.[currentUserId];
+            if (legacyFilter && !localStorage.getItem(filtersKey(currentUserId))) {
+                writeLocalFilters(currentUserId, legacyFilter);
+                setLocalFilters(legacyFilter);
+            }
+        };
+
         const fetchMetadata = async () => {
             const sceneMetadata = await OBR.scene.getMetadata();
             if (validMetadata(sceneMetadata)) {
                 setMetadata(sceneMetadata);
-                // One-way migration: if legacy filter data exists in metadata and
-                // localStorage is empty, copy it over then ignore metadata filters.
-                const legacyFilter = sceneMetadata[metadataId].filters?.[currentUserId];
-                if (legacyFilter && !localStorage.getItem(filtersKey(currentUserId))) {
-                    writeLocalFilters(currentUserId, legacyFilter);
-                    setLocalFilters(legacyFilter);
-                }
+                migrateLegacyFilters(sceneMetadata[metadataId].filters);
+                setStatus('ready');
                 return;
             }
-            // todo handle
-            console.log('Metadata was invalid');
+            // Our own key exists but the value is malformed. Salvage every valid
+            // preset and discard only the broken entries, rather than letting the
+            // next write overwrite the whole list. If nothing can be read, block
+            // writes so we never clobber unreadable data.
+            if (metadataId in sceneMetadata) {
+                const raw = (sceneMetadata as Record<string, unknown>)[metadataId];
+                if (canSalvageViewportMetadata(raw)) {
+                    setMetadata({ [metadataId]: { starredViewports: salvageStars(raw.starredViewports) } });
+                    setStatus('ready');
+                    return;
+                }
+                console.error('Views: scene metadata is corrupt and could not be read', raw);
+                setStatus('error');
+                return;
+            }
+            // Our key is absent. One-time import from the original
+            // jump-to-viewport extension, if this scene has presets stored under
+            // its key. The legacy key is read only and left untouched.
+            const legacyRaw = (sceneMetadata as Record<string, unknown>)[legacyMetadataId];
+            if (canSalvageViewportMetadata(legacyRaw)) {
+                const imported = salvageStars(legacyRaw.starredViewports);
+                setMetadata({ [metadataId]: { starredViewports: imported } });
+                migrateLegacyFilters(
+                    (legacyRaw as { filters?: Record<string, UserFilter> }).filters,
+                );
+                if (imported.length) {
+                    // Persist into our namespace so the import survives reloads
+                    // and is visible to other clients. Idempotent across clients.
+                    await OBR.scene.setMetadata({
+                        [metadataId]: { starredViewports: imported },
+                    });
+                }
+                setStatus('ready');
+                return;
+            }
+            // Genuinely fresh scene, or legacy data too broken to import.
+            setStatus('ready');
         };
         fetchMetadata();
     }, []);
@@ -144,6 +196,7 @@ export const useViewport = () => {
     }, [currentUserId]);
 
     const starViewport = async (viewportName: string) => {
+        if (status === 'error') return;
         const trimmed = viewportName.trim();
         if (!trimmed) throw new Error('Viewport name must not be blank');
         if (starred(metadata).some((v) => v.name === trimmed))
@@ -160,6 +213,7 @@ export const useViewport = () => {
         });
     };
     const deleteViewport = async (viewport: StarredLegacy | StarredBox) => {
+        if (status === 'error') return;
         await OBR.scene.setMetadata({
             [metadataId]: { starredViewports: applyViewportDelete(starred(metadata), viewport.id) },
         });
@@ -196,6 +250,7 @@ export const useViewport = () => {
     };
 
     const overwriteViewport = async ({ id: idToBeOverwritten }: { id: string }) => {
+        if (status === 'error') return;
         const existingViewports = starred(metadata);
         const viewportToBeDeleted = existingViewports.find(({ id }) => id === idToBeOverwritten);
         if (!viewportToBeDeleted) {
@@ -239,5 +294,6 @@ export const useViewport = () => {
         jumpToPlayerItems,
         filteredPlayerIds,
         showAbsentPlayers: localFilters.absents,
+        metadataError: status === 'error',
     };
 };
