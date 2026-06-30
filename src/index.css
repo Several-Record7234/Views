@@ -1,5 +1,31 @@
 @import "tailwindcss";
 
+/* Self-hosted Roboto — stable URLs, no Google Fonts dependency */
+@font-face {
+  font-family: "Roboto";
+  src: url("/fonts/Roboto-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Roboto";
+  src: url("/fonts/Roboto-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Roboto";
+  src: url("/fonts/Roboto-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+}
+@font-face {
+  font-family: "Roboto";
+  src: url("/fonts/Roboto-BoldItalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+}
+
 @theme {
   --color-crust: #11111b;
   --color-mantle: #181825;
@@ -273,17 +299,11 @@ input:checked + .slider:before {
   border-radius: 50%;
 }
 
-/* ─── Material icons ─── */
-.material-symbols-outlined {
-  font-size: 1.25rem;
-}
-
-.material-symbols-outlined.small {
-  font-size: 1rem;
-}
-
-.material-symbols-outlined.toggled {
-  font-weight: 700;
+/* ─── Inline icons ─── */
+.icon {
+  display: inline-block;
+  fill: currentColor;
+  flex-shrink: 0;
 }
 
 /* ─── Accessibility ─── */
@@ -324,7 +344,8 @@ input:checked + .slider:before {
   padding-left: 1rem;
 }
 
-.help .material-symbols-outlined,
-.help .material-symbols-outlined.small {
-  font-size: 0.75rem !important;
+.help .icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.15em;
 }

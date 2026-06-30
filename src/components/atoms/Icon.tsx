@@ -1,9 +1,25 @@
-export type IconProps = { name: string; size?: 'small'; toggled?: boolean };
+export type IconProps = { name: 'filter_list' | 'help' | 'delete'; size?: 'small' };
 
-export const Icon: React.FC<IconProps> = ({ name, size, toggled }) => {
+// Material Design icon paths (24x24 viewBox), inlined so the extension carries
+// no Material Symbols font dependency. Fill inherits the button's text colour
+// via currentColor, which also drives the active/toggled highlight.
+const PATHS: Record<IconProps['name'], string> = {
+    filter_list: 'M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z',
+    help: 'M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z',
+    delete: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
+};
+
+export const Icon: React.FC<IconProps> = ({ name, size }) => {
+    const px = size === 'small' ? '1rem' : '1.25rem';
     return (
-        <span className={`material-symbols-outlined ${size || ''} ${toggled ? 'toggled' : ''}`}>
-            {name}
-        </span>
+        <svg
+            className="icon"
+            viewBox="0 0 24 24"
+            width={px}
+            height={px}
+            aria-hidden="true"
+            focusable="false">
+            <path d={PATHS[name]} />
+        </svg>
     );
 };

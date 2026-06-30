@@ -59,13 +59,13 @@ const Content = () => {
                         aria-label={showFilters ? 'Hide filters' : 'Show filters'}
                         className={`narrowest-cell ${showFilters ? 'enabled' : ''}`}
                         onClick={() => setShowFilters((prev) => !prev)}>
-                        <Icon name="filter_list" size="small" toggled={showFilters} />
+                        <Icon name="filter_list" size="small" />
                     </Button>
                     <Button
                         aria-label={showHelp ? 'Hide help' : 'Show help'}
                         className={`narrowest-cell ${showHelp ? 'enabled' : ''}`}
                         onClick={() => setShowHelp((prev) => !prev)}>
-                        <Icon name="help" size="small" toggled={showHelp} />
+                        <Icon name="help" size="small" />
                     </Button>
                 </div>
                 {showFilters && (
