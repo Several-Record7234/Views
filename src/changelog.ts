@@ -27,7 +27,7 @@ export const changelog: ChangelogEntry[] = [
       },
       {
         type: "feat",
-        text: "**Reset:** the *Reset* button returns the viewport to the Scene's default position.",
+        text: "**Reset View:** the *Reset View* button returns the viewport to the Scene Default.",
       },
       {
         type: "feat",

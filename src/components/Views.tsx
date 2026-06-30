@@ -45,8 +45,8 @@ const Content = () => {
         <div>
             <section className="extension-section">
                 <div className="row" key="default">
-                    <Button onClick={reset} className="wide-cell" aria-label="Reset viewport">
-                        Reset
+                    <Button onClick={reset} className="wide-cell" aria-label="Reset View">
+                        Reset View
                     </Button>
                     <Button
                         onClick={jumpToPlayerItems}

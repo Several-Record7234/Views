@@ -10,7 +10,7 @@
 - [Why Views?](#why-views)
 - [Getting Started](#getting-started)
 - [Saved Presets](#saved-presets)
-- [Reset and Player Images](#reset-and-player-images)
+- [Reset View and Player Images](#reset-view-and-player-images)
 - [Filtering the List](#filtering-the-list)
 - [GM and Player Capabilities](#gm-and-player-capabilities)
 - [Troubleshooting](#troubleshooting)
@@ -33,7 +33,7 @@ Large scenes are easy to get lost in. Panning back to the tavern, the boss arena
 Copy the **Views** manifest URL:
 
 ```
-https://[subdomain].several-record.com/manifest.json
+https://views.several-record.com/manifest.json
 ```
 
 Then head to your **Owlbear Rodeo Room** → **Extras** → **Extensions** → **+** (Add Custom Extension), paste the URL, and confirm.
@@ -60,11 +60,11 @@ Position the camera where you want it, type a name into the field at the bottom 
 
 ---
 
-## Reset and Player Images
+## Reset View and Player Images
 
 > <img src="public/presets.gif" width="600">
 
-- **Reset** returns the camera to the Scene's default position.
+- **Reset View** returns the camera to the Scene Default.
 - **Player Images** flies the camera to frame all non-GM player tokens, wherever they currently are in the Scene. The button is disabled when no player tokens are present.
 
 ---
@@ -85,7 +85,7 @@ Position the camera where you want it, type a name into the field at the bottom 
 |---|---|---|
 | Save a named preset | ✓ | ✓ |
 | Jump to any preset | ✓ | ✓ |
-| Reset / Player Images | ✓ | ✓ |
+| Reset View / Player Images | ✓ | ✓ |
 | Filter the list (personal) | ✓ | ✓ |
 | Delete **own** presets | ✓ | ✓ |
 | Delete **any** preset | — | ✓ |

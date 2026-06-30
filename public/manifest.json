@@ -4,6 +4,7 @@
   "manifest_version": 1,
   "author": "Andrew C, after Viewport Presets by Omar B",
   "description": "Easily save and jump to areas of a scene",
+  "homepage_url": "https://views.several-record.com",
   "icon": "/icon.svg",
   "action": {
     "title": "Views",

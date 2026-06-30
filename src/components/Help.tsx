@@ -4,10 +4,10 @@ export const Help = () => (
     <>
         {' '}
         <div>
-            Support: <a style={{color: "var(--color-blue)"}} target="_blank" href="https://ko-fi.com/omarbenmegdoul">https://ko-fi.com/omarbenmegdoul</a>
+            Support: <a style={{color: "var(--color-blue)"}} target="_blank" rel="noreferrer" href="https://discord.gg/u5RYMkV98s">Owlbear Rodeo Discord</a>
         </div>
         <ul className="help">
-            <li>Use the "Reset View" button to move your viewport back to the scene default.</li>
+            <li>Use the "Reset View" button to move your viewport back to the Scene Default.</li>
             <li>
                 Use the "Player Images" button to move to the location of player-owned images
                 (typically their character tokens).
