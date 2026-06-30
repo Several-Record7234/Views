@@ -3,6 +3,7 @@ import { PlayerContext } from '../context/PlayerContext.ts';
 import { PropsWithChildren, useEffect, useState } from 'react';
 import { PluginGate } from '../context/PluginGateContext.tsx';
 import { PartyContext } from '../context/PartyContext.ts';
+import { changelog, getUnseenEntries } from '../changelog.ts';
 
 export const ContextWrapper = (props: PropsWithChildren) => {
     const [player, setPlayer] = useState<Player | null>(null);
@@ -29,6 +30,26 @@ export const ContextWrapper = (props: PropsWithChildren) => {
             setParty(party);
             // Keep player data current for the session (name, colour, role can change)
             OBR.player.onChange((updatedPlayer) => setPlayer(updatedPlayer));
+
+            // What's New modal (GM only, fires once per new version)
+            if (role === "GM") {
+              const lastSeen = localStorage.getItem("views:lastSeenVersion");
+              if (!lastSeen) {
+                if (changelog.length > 0) localStorage.setItem("views:lastSeenVersion", changelog[0].version);
+              } else {
+                const unseen = getUnseenEntries(changelog, lastSeen);
+                if (unseen.length > 0) {
+                  OBR.modal.open({
+                    id: "dev.views.whats-new",
+                    url: `/whats-new.html?lastSeen=${encodeURIComponent(lastSeen)}`,
+                    width: 360,
+                    height: 480,
+                  }).then(() => {
+                    if (changelog.length > 0) localStorage.setItem("views:lastSeenVersion", changelog[0].version);
+                  }).catch(() => {});
+                }
+              }
+            }
         });
     }, []);
 
