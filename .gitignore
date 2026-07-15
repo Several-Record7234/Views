@@ -5,7 +5,6 @@ dist/
 # Claude-related files
 .claude/
 CLAUDE.md
-progress.md
 user-tests.md
 
 # IDE
