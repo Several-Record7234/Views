@@ -1,5 +1,13 @@
 # Views — progress.md
 
+## 2026-08-14: Manifest-version injection bug fixed (portfolio-wide audit)
+
+The `generateBundle`/`bundle["manifest.json"]` hook in `vite.config.ts` was a silent no-op —
+`public/` files bypass Rollup's bundle entirely, so it never ran. `package.json` and the
+committed manifest happened to already match (`0.1.0`), so nothing was visibly wrong, but it
+would have silently drifted on the next version bump. Replaced with the Forms-pattern
+`closeBundle` hook that rewrites `dist/manifest.json` post-copy.
+
 ## Current state (2026-06-30, hardening session)
 
 Hardening + push session. Now 12 commits on `main`, all pushed to origin (latest `75c1f44`).
