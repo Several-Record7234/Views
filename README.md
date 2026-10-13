@@ -101,7 +101,7 @@ Position the camera where you want it, type a name into the field at the bottom 
 
 ### "The popover looks wrong right after an update"
 
-- Owlbear Rodeo can cache an older version. Close and reopen the extension popover, or refresh the browser tab, to load the latest build.
+- Owlbear Rodeo can cache an older version. Refresh the browser tab to load the latest build. Closing and reopening the popover will not work, as Owlbear Rodeo keeps it loaded in the background rather than closing it.
 
 ---
 
