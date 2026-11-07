@@ -45,3 +45,16 @@ export const isRecallRequest = (value: unknown): value is RecallRequest => {
 };
 
 export const epochNow = () => performance.timeOrigin + performance.now();
+
+// Presence handshake, so the popover knows before any click whether a
+// background page is running. The background page announces `ready` when it
+// starts and answers each `ping` with `ready`: both are needed because either
+// iframe may load first. Always LOCAL.
+export const presenceChannel = 'dev.views/presence';
+
+export type PresenceMessage = { kind: 'ping' } | { kind: 'ready' };
+
+export const isPresenceMessage = (value: unknown): value is PresenceMessage => {
+    const kind = (value as Record<string, unknown> | null)?.kind;
+    return typeof value === 'object' && value !== null && (kind === 'ping' || kind === 'ready');
+};

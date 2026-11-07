@@ -1,7 +1,7 @@
 import { useViewport } from '../viewport/useViewport.ts';
 import { ContextWrapper } from './ContextWrapper.tsx';
 import { useSceneReady } from '../context/useSceneReady.ts';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePlayerContext } from '../context/PlayerContext.ts';
 import { usePartyContext } from '../context/PartyContext.ts';
 import { Icon } from './atoms/Icon.tsx';
@@ -9,6 +9,8 @@ import { Button } from './atoms/Button.tsx';
 import { ControlGroup } from './ControlGroup.tsx';
 import { Help } from './Help.tsx';
 import { ErrorBoundary } from './ErrorBoundary.tsx';
+import { useBackgroundStatus } from '../context/useBackgroundStatus.ts';
+import { watchBackground } from '../viewport/watchBackground.ts';
 
 export const Views = () => {
     const { isReady } = useSceneReady();
@@ -33,6 +35,9 @@ const Content = () => {
         jumpToPlayerItems,
         metadataError,
     } = useViewport();
+
+    const backgroundStatus = useBackgroundStatus((store) => store.status);
+    useEffect(() => watchBackground(), []);
 
     const [draftViewportName, setDraftViewportName] = useState<string>('');
     const { players, nonGMPlayers } = usePartyContext();
@@ -170,6 +175,12 @@ const Content = () => {
                 />
             </ul>
             <section className="extension-section">
+                {backgroundStatus === 'missing' && (
+                    <div className="background-notice" role="status">
+                        Views' background task absent; jumps use default animation, cinematic
+                        transitions unavailable.
+                    </div>
+                )}
                 {metadataError && (
                     <div className="metadata-error" role="alert">
                         This Scene's saved viewports could not be read and may be corrupted. Saving

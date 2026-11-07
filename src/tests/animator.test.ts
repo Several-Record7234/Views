@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createAnimator, AnimatorDeps, Shot } from "../animation/animator";
 import { Transform, fitBox } from "../animation/curve";
-import { isRecallRequest } from "../animation/recallProtocol";
+import { isPresenceMessage, isRecallRequest } from "../animation/recallProtocol";
 
 const size = { width: 1600, height: 900 };
 const start: Transform = { position: { x: 0, y: 0 }, scale: 1 };
@@ -179,5 +179,15 @@ describe("isRecallRequest", () => {
     expect(isRecallRequest({ kind: "recall", to: { kind: "transform", transform: { ...target, scale: 0 } }, sentAt: 1 })).toBe(false);
     expect(isRecallRequest({ kind: "recall", to: { kind: "transform", transform: { ...target, scale: NaN } }, sentAt: 1 })).toBe(false);
     expect(isRecallRequest({ kind: "jump", to: { kind: "box", box }, sentAt: 1 })).toBe(false);
+  });
+});
+
+describe("isPresenceMessage", () => {
+  it("accepts ping and ready only", () => {
+    expect(isPresenceMessage({ kind: "ping" })).toBe(true);
+    expect(isPresenceMessage({ kind: "ready" })).toBe(true);
+    expect(isPresenceMessage({ kind: "recall" })).toBe(false);
+    expect(isPresenceMessage(null)).toBe(false);
+    expect(isPresenceMessage("ready")).toBe(false);
   });
 });

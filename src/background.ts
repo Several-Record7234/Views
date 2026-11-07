@@ -4,7 +4,14 @@
 import OBR from '@owlbear-rodeo/sdk';
 import { createAnimator } from './animation/animator';
 import { AnimationSettings, animationSettingsId, decodeAnimationSettings } from './animation/settings';
-import { epochNow, isRecallRequest, recallChannel } from './animation/recallProtocol';
+import {
+    PresenceMessage,
+    epochNow,
+    isPresenceMessage,
+    isRecallRequest,
+    presenceChannel,
+    recallChannel,
+} from './animation/recallProtocol';
 
 // A background page gets no requestAnimationFrame at all, even while it is
 // "visible" (measured 2026-11-07), so the clock is a timer. 16ms gave ~59
@@ -75,4 +82,17 @@ OBR.onReady(async () => {
             });
         }
     });
+
+    const announceReady = () => {
+        const ready: PresenceMessage = { kind: 'ready' };
+        OBR.broadcast
+            .sendMessage(presenceChannel, ready, { destination: 'LOCAL' })
+            .catch((error: unknown) => console.error('[Views] could not announce the background page', error));
+    };
+    OBR.broadcast.onMessage(presenceChannel, (event) => {
+        if (event.connectionId !== ownConnectionId) return;
+        if (isPresenceMessage(event.data) && event.data.kind === 'ping') announceReady();
+    });
+    // Covers a popover that loaded first and has already pinged.
+    announceReady();
 });
