@@ -23,6 +23,7 @@ import {
     legacyTransformToBox,
     restoreDamagedLegacy,
 } from './viewportHelpers';
+import { requestRecall } from './recall';
 
 const makeId = () => {
     return crypto.randomUUID();
@@ -77,14 +78,15 @@ const getViewportBounds = async () => {
     return { min, max };
 };
 
+// Both jumps are animated by the background page (see src/background.ts).
 const jumpToLegacy = async ({ transform }: StarredLegacy) => {
-    await OBR.viewport.animateTo(transform);
+    await requestRecall({ kind: 'transform', transform });
 };
 
 const jumpToBoundingBox = async ({ boundingCorners }: Pick<StarredBox, 'boundingCorners'>) => {
-    const { min, max } = boundingCorners;
-    const bbox = Math2.boundingBox([min, max]);
-    await OBR.viewport.animateToBounds(bbox);
+    // boundingBox normalises the corners, so a box saved with min/max swapped still fits.
+    const { min, max } = Math2.boundingBox([boundingCorners.min, boundingCorners.max]);
+    await requestRecall({ kind: 'box', box: { min, max } });
 };
 
 const constructStarredBox = ({
