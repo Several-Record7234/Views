@@ -1,4 +1,46 @@
-import { StarredBox, StarredLegacy } from '../helper/types';
+import { StarredBox, StarredLegacy, isStarredBox, isStarredLegacy } from '../helper/types';
+
+type Vector = { x: number; y: number };
+
+/**
+ * World-space corners a legacy transform shows on a viewport of the given size.
+ * Computed rather than read back after a jump, because animateTo resolves
+ * before the viewport has moved.
+ */
+export const legacyTransformToBox = (
+    transform: { position: Vector; scale: number },
+    viewportSize: { width: number; height: number },
+): { min: Vector; max: Vector } => {
+    const { position, scale } = transform;
+    return {
+        min: { x: -position.x / scale, y: -position.y / scale },
+        max: {
+            x: (viewportSize.width - position.x) / scale,
+            y: (viewportSize.height - position.y) / scale,
+        },
+    };
+};
+
+/**
+ * Undo the broken legacy migration: it saved the pre-jump viewport over the
+ * preset and reassigned its owner to whoever jumped. That migration was the
+ * only writer of a box under a legacy id, so any box whose id matches a legacy
+ * transform entry is damaged and is restored verbatim from the legacy key.
+ */
+export const restoreDamagedLegacy = (
+    current: Array<StarredBox | StarredLegacy>,
+    legacyStars: Array<StarredBox | StarredLegacy>,
+): { stars: Array<StarredBox | StarredLegacy>; restoredCount: number } => {
+    const originals = new Map(legacyStars.filter(isStarredLegacy).map((star) => [star.id, star]));
+    let restoredCount = 0;
+    const stars = current.map((star) => {
+        const original = isStarredBox(star) ? originals.get(star.id) : undefined;
+        if (!original) return star;
+        restoredCount++;
+        return original;
+    });
+    return { stars, restoredCount };
+};
 
 export const deriveFilteredPlayerIds = (playerFilters: Record<string, boolean>): string[] =>
     Object.entries(playerFilters)

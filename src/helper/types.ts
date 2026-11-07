@@ -6,6 +6,12 @@ export const metadataId = 'dev.views/metadata';
  * a one-time import into our own namespace; never written to.
  */
 export const legacyMetadataId = 'com.omarbenmegdoul.jumpToViewport3/metadata';
+/**
+ * Set once a Scene has had its broken legacy migrations repaired. A separate
+ * key because every preset write replaces the whole `metadataId` object, which
+ * would wipe a flag stored inside it and let the repair re-run.
+ */
+export const legacyRepairId = 'dev.views/legacyRepaired';
 export interface SceneMetadata {
     [metadataId]: {
         starredViewports: Array<StarredBox | StarredLegacy> | undefined;

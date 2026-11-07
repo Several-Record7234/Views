@@ -10,12 +10,19 @@ import {
     isStarredLegacy,
     isValidStar,
     legacyMetadataId,
+    legacyRepairId,
     metadataId,
     validMetadata,
 } from '../helper/types';
 import { usePlayerContext } from '../context/PlayerContext';
 import { usePartyContext } from '../context/PartyContext';
-import { deriveFilteredPlayerIds, applyViewportDelete, calcItemsBoundingBox } from './viewportHelpers';
+import {
+    deriveFilteredPlayerIds,
+    applyViewportDelete,
+    calcItemsBoundingBox,
+    legacyTransformToBox,
+    restoreDamagedLegacy,
+} from './viewportHelpers';
 
 const makeId = () => {
     return crypto.randomUUID();
@@ -106,6 +113,34 @@ const getPlayerImages = async (nonGMids: string[]) => {
 };
 
 
+const legacyStarsIn = (sceneMetadata: Record<string, unknown>) => {
+    const legacyRaw = sceneMetadata[legacyMetadataId];
+    return canSalvageViewportMetadata(legacyRaw) ? salvageStars(legacyRaw.starredViewports) : [];
+};
+
+/**
+ * One-time per Scene: restore presets damaged by the old legacy migration (see
+ * restoreDamagedLegacy). The marker is written whenever the Scene holds legacy
+ * transforms, even if nothing was damaged, because a later correct migration
+ * also leaves a box under a legacy id and must not be "repaired" back.
+ */
+const repairLegacyMigrations = async (
+    stars: Array<StarredBox | StarredLegacy>,
+    sceneMetadata: Record<string, unknown>,
+): Promise<Array<StarredBox | StarredLegacy>> => {
+    if (legacyRepairId in sceneMetadata) return stars;
+    const legacyStars = legacyStarsIn(sceneMetadata);
+    if (!legacyStars.some(isStarredLegacy)) return stars;
+    const { stars: repaired, restoredCount } = restoreDamagedLegacy(stars, legacyStars);
+    await OBR.scene.setMetadata(
+        restoredCount
+            ? { [metadataId]: { starredViewports: repaired }, [legacyRepairId]: 1 }
+            : { [legacyRepairId]: 1 },
+    );
+    if (restoredCount) console.info(`Views: restored ${restoredCount} preset(s) damaged by an earlier migration`);
+    return repaired;
+};
+
 const defaultSceneMetadata: SceneMetadata = {
     [metadataId]: { starredViewports: [] },
 };
@@ -136,7 +171,11 @@ export const useViewport = () => {
         const fetchMetadata = async () => {
             const sceneMetadata = await OBR.scene.getMetadata();
             if (validMetadata(sceneMetadata)) {
-                setMetadata(sceneMetadata);
+                const repaired = await repairLegacyMigrations(
+                    sceneMetadata[metadataId].starredViewports ?? [],
+                    sceneMetadata,
+                );
+                setMetadata({ [metadataId]: { ...sceneMetadata[metadataId], starredViewports: repaired } });
                 migrateLegacyFilters(sceneMetadata[metadataId].filters);
                 setStatus('ready');
                 return;
@@ -148,7 +187,11 @@ export const useViewport = () => {
             if (metadataId in sceneMetadata) {
                 const raw = (sceneMetadata as Record<string, unknown>)[metadataId];
                 if (canSalvageViewportMetadata(raw)) {
-                    setMetadata({ [metadataId]: { starredViewports: salvageStars(raw.starredViewports) } });
+                    const repaired = await repairLegacyMigrations(
+                        salvageStars(raw.starredViewports),
+                        sceneMetadata,
+                    );
+                    setMetadata({ [metadataId]: { starredViewports: repaired } });
                     setStatus('ready');
                     return;
                 }
@@ -169,8 +212,10 @@ export const useViewport = () => {
                 if (imported.length) {
                     // Persist into our namespace so the import survives reloads
                     // and is visible to other clients. Idempotent across clients.
+                    // A fresh import is undamaged, so mark the repair as done.
                     await OBR.scene.setMetadata({
                         [metadataId]: { starredViewports: imported },
+                        [legacyRepairId]: 1,
                     });
                 }
                 setStatus('ready');
@@ -249,7 +294,7 @@ export const useViewport = () => {
 
         if (isStarredLegacy(star)) {
             await jumpToLegacy(star);
-            await overwriteViewport({ id });
+            await migrateLegacyViewport(star);
         }
     };
 
@@ -268,28 +313,25 @@ export const useViewport = () => {
         setLocalFilters(updated);
     };
 
-    const overwriteViewport = async ({ id: idToBeOverwritten }: { id: string }) => {
+    // Convert a legacy transform preset to a box in place, keeping its owner.
+    // The box is computed from the transform, never read back from the
+    // viewport: animateTo resolves before the viewport has moved.
+    const migrateLegacyViewport = async (legacy: StarredLegacy) => {
         if (status === 'error') return;
+        const [width, height] = await Promise.all([OBR.viewport.getWidth(), OBR.viewport.getHeight()]);
+        const migrated: StarredBox = {
+            id: legacy.id,
+            name: legacy.name,
+            playerId: legacy.playerId,
+            boundingCorners: legacyTransformToBox(legacy.transform, { width, height }),
+        };
         const current = await readCurrentStarred();
-        const viewportToBeDeleted = current.find(({ id }) => id === idToBeOverwritten);
-        if (!viewportToBeDeleted) {
-            throw new Error(
-                `Overwrite Viewport Error: No viewport with id ${idToBeOverwritten} exists`,
-            );
+        if (!current.some(({ id }) => id === legacy.id)) {
+            throw new Error(`Migrate Viewport Error: No viewport with id ${legacy.id} exists`);
         }
-        const { min, max } = await getViewportBounds();
         await OBR.scene.setMetadata({
             [metadataId]: {
-                starredViewports: [
-                    ...current.filter(({ id }) => id !== idToBeOverwritten),
-                    constructStarredBox({
-                        viewportName: viewportToBeDeleted.name,
-                        min,
-                        max,
-                        currentUserId,
-                        id: idToBeOverwritten,
-                    }),
-                ],
+                starredViewports: current.map((star) => (star.id === legacy.id ? migrated : star)),
             },
         });
     };

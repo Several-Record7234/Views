@@ -12,6 +12,8 @@ import {
   deriveFilteredPlayerIds,
   applyViewportDelete,
   calcItemsBoundingBox,
+  legacyTransformToBox,
+  restoreDamagedLegacy,
 } from "../viewport/viewportHelpers";
 
 describe("metadataId", () => {
@@ -211,5 +213,61 @@ describe("calcItemsBoundingBox", () => {
       min: { x: 180, y: 270 },
       max: { x: 220, y: 330 },
     });
+  });
+});
+
+describe("legacyTransformToBox", () => {
+  it("maps the viewport's screen corners to world space", () => {
+    // screen = world * scale + position, so world = (screen - position) / scale
+    const box = legacyTransformToBox(
+      { position: { x: -100, y: -50 }, scale: 2 },
+      { width: 800, height: 600 },
+    );
+    expect(box).toEqual({ min: { x: 50, y: 25 }, max: { x: 450, y: 325 } });
+  });
+});
+
+describe("restoreDamagedLegacy", () => {
+  const legacy = {
+    id: "L1",
+    name: "Harbour",
+    playerId: "owner",
+    transform: { position: { x: 10, y: 20 }, scale: 1.5 },
+  };
+  const damaged = {
+    id: "L1",
+    name: "Harbour",
+    playerId: "whoever-jumped",
+    boundingCorners: { min: { x: 0, y: 0 }, max: { x: 1, y: 1 } },
+  };
+  const unrelated = {
+    id: "B1",
+    name: "Gate",
+    playerId: "owner",
+    boundingCorners: { min: { x: 5, y: 5 }, max: { x: 9, y: 9 } },
+  };
+
+  it("restores a box under a legacy id to the original entry, owner included", () => {
+    const { stars, restoredCount } = restoreDamagedLegacy([damaged, unrelated], [legacy]);
+    expect(stars).toEqual([legacy, unrelated]);
+    expect(restoredCount).toBe(1);
+  });
+
+  it("leaves an unmigrated legacy entry and unrelated boxes alone", () => {
+    const { stars, restoredCount } = restoreDamagedLegacy([legacy, unrelated], [legacy]);
+    expect(stars).toEqual([legacy, unrelated]);
+    expect(restoredCount).toBe(0);
+  });
+
+  it("ignores legacy-key entries that were already boxes", () => {
+    const { restoredCount } = restoreDamagedLegacy([unrelated], [unrelated]);
+    expect(restoredCount).toBe(0);
+  });
+
+  // Why the repair must run once and be marked done: a CORRECT migration also
+  // leaves a box under a legacy id, which this function cannot tell apart.
+  it("would revert a correct migration, so the caller must gate it to one run", () => {
+    const correct = { ...damaged, playerId: "owner" };
+    expect(restoreDamagedLegacy([correct], [legacy]).restoredCount).toBe(1);
   });
 });
