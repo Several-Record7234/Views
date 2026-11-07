@@ -32,11 +32,14 @@ Cinematic Mode design, the phase list and every live-test result.
   "Player Images" renamed "Player Tokens" everywhere incl. the 0.1.0 changelog (approved).
 
 ### Immediate next actions
-- [ ] **Help page**: the Help link targets `https://views.several-record.com/help.html`, which
-      does not exist yet (no `build-help.js`). Port the CSP-safe template; seed it from the
-      now-unused `src/components/Help.tsx`, then delete that file.
 - [ ] Phase 3: Cinematic Mode strip + Sync (see plan). Replace the background notice with a
       greyed-out Cinematic switch + hover tip when that UI lands.
+- [ ] **Help page, AFTER phase 3** (Andrew, 2026-11-07): write a comprehensive `README.md`
+      covering Cinematic Mode, then generate `/help.html` from it on CF Pages via the project
+      template's CSP-safe `build-help.js` (JS in `public/help.js`, no inline `<script>`). Until
+      then the title-row Help link (`https://views.several-record.com/help.html`) leads nowhere.
+      Fold anything useful from the now-unused `src/components/Help.tsx` into the README, then
+      delete that file.
 
 ### Open questions
 - Neutral slot fill: literal white or a Catppuccin surface token?
@@ -200,3 +203,4 @@ All 17 review issues resolved across 8 phases. Each phase built and tested clean
 - 2026-11-07 17:27 -- SESSION START: settings rename to cinematic-only ease-in, then phase 2 background-page spike
 - 2026-11-07 20:56 -- SESSION END: background-page animator + exponential recall (540ms) + absent-background fallback built, live-tested, committed and pushed (f5e710b)
 - 2026-11-07 21:28 -- SESSION START: phase 1 GM animation settings UI (recall + Cinematic durations, Cinematic ease-in)
+- 2026-11-07 22:09 -- SESSION END: GM animation settings panel (a74d77a) + title row and Player Tokens rename (19d017c), live tests 1-3 passed, all pushed; help page moved after phase 3
