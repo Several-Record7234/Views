@@ -23,7 +23,7 @@ export const changelog: ChangelogEntry[] = [
       },
       {
         type: "feat",
-        text: "**Player Images:** the *Player Images* button flies the viewport to frame all non-GM player tokens in one click.",
+        text: "**Player Tokens:** the *Player Tokens* button flies the viewport to frame all non-GM player tokens in one click.",
       },
       {
         type: "feat",

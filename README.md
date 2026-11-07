@@ -10,7 +10,7 @@
 - [Why Views?](#why-views)
 - [Getting Started](#getting-started)
 - [Saved Presets](#saved-presets)
-- [Reset View and Player Images](#reset-view-and-player-images)
+- [Reset View and Player Tokens](#reset-view-and-player-tokens)
 - [Filtering the List](#filtering-the-list)
 - [GM and Player Capabilities](#gm-and-player-capabilities)
 - [Troubleshooting](#troubleshooting)
@@ -60,12 +60,12 @@ Position the camera where you want it, type a name into the field at the bottom 
 
 ---
 
-## Reset View and Player Images
+## Reset View and Player Tokens
 
 > <img src="public/presets.gif" width="600">
 
 - **Reset View** returns the camera to the Scene Default.
-- **Player Images** flies the camera to frame all non-GM player tokens, wherever they currently are in the Scene. The button is disabled when no player tokens are present.
+- **Player Tokens** flies the camera to frame all non-GM player tokens, wherever they currently are in the Scene. The button is disabled when no player tokens are present.
 
 ---
 
@@ -85,7 +85,7 @@ Position the camera where you want it, type a name into the field at the bottom 
 |---|---|---|
 | Save a named preset | ✓ | ✓ |
 | Jump to any preset | ✓ | ✓ |
-| Reset View / Player Images | ✓ | ✓ |
+| Reset View / Player Tokens | ✓ | ✓ |
 | Filter the list (personal) | ✓ | ✓ |
 | Delete **own** presets | ✓ | ✓ |
 | Delete **any** preset | — | ✓ |

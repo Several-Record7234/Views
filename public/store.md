@@ -19,7 +19,7 @@ _Viewport Presets_ lets you and your players create shortcuts to quickly navigat
 <img src="https://github.com/omarbenmegdoul/jump-to-viewport/blob/publication/public/presets.gif?raw=true" alt="Default presets" width="600"/>
 
 - The _Reset View_ button pans to the default scene view.
-- When players control images (e.g. tokens), _Player Images_ jumps to wherever they are in the scene.
+- When players control images (e.g. tokens), _Player Tokens_ jumps to wherever they are in the scene.
 
 ## Custom bookmarks
 <img src="https://github.com/omarbenmegdoul/jump-to-viewport/blob/publication/public/bookmarks.gif?raw=true" alt="Saving bookmarks" width="600"/>

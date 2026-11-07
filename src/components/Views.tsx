@@ -7,7 +7,7 @@ import { usePartyContext } from '../context/PartyContext.ts';
 import { Icon } from './atoms/Icon.tsx';
 import { Button } from './atoms/Button.tsx';
 import { ControlGroup } from './ControlGroup.tsx';
-import { Help } from './Help.tsx';
+import { TitleRow } from './TitleRow.tsx';
 import { AnimationSettingsPanel } from './AnimationSettingsPanel.tsx';
 import { ErrorBoundary } from './ErrorBoundary.tsx';
 import { useBackgroundStatus } from '../context/useBackgroundStatus.ts';
@@ -45,7 +45,6 @@ const Content = () => {
     const currentUser = usePlayerContext();
     const allPlayers = [currentUser, ...(players ?? [])];
     const [showFilters, setShowFilters] = useState<boolean>(false);
-    const [showHelp, setShowHelp] = useState<boolean>(false);
     const [showAnimationSettings, setShowAnimationSettings] = useState<boolean>(false);
     const isGM = currentUser.role === 'GM';
 
@@ -68,6 +67,7 @@ const Content = () => {
 
     return (
         <div>
+            <TitleRow />
             <section className="extension-section">
                 <div className="row" key="default">
                     <Button onClick={reset} className="wide-cell" aria-label="Reset View">
@@ -76,9 +76,9 @@ const Content = () => {
                     <Button
                         onClick={jumpToPlayerItems}
                         className="wide-cell"
-                        aria-label="Player Images"
+                        aria-label="Player Tokens"
                         disabled={!Boolean(nonGMPlayers?.length)}>
-                        Player Images
+                        Player Tokens
                     </Button>
                     <Button
                         aria-label={showFilters ? 'Hide filters' : 'Show filters'}
@@ -96,12 +96,6 @@ const Content = () => {
                             <Icon name="settings" size="small" />
                         </Button>
                     )}
-                    <Button
-                        aria-label={showHelp ? 'Hide help' : 'Show help'}
-                        className={`narrowest-cell ${showHelp ? 'enabled' : ''}`}
-                        onClick={() => setShowHelp((prev) => !prev)}>
-                        <Icon name="help" size="small" />
-                    </Button>
                 </div>
                 {showFilters && (
                     <div className="filter">
@@ -163,7 +157,6 @@ const Content = () => {
                 )}
                 {isGM && showAnimationSettings && <AnimationSettingsPanel />}
             </section>
-            {showHelp && <Help />}
             <ul className="extension-section">
                 {allPlayers
                     ?.filter(({ id }) => !filteredPlayerIds.includes(id))

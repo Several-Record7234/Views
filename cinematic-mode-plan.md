@@ -127,7 +127,7 @@ jumped to under the old code. Andrew to say whether such a Scene exists.
   greyed out plus a descriptive hover tip (Andrew, 2026-11-07). Players have no switch (GM-only),
   so they get no indicator; accepted, since their jumps still work natively and phase 4's
   confirmation monitor reports Cinematic failures to the GM.
-- `useViewport` jumps (presets, legacy, Player Images) now `requestRecall` → background.
+- `useViewport` jumps (presets, legacy, Player Tokens) now `requestRecall` → background.
   Fire-and-forget: no fallback if the background page isn't running (open question).
 - Spike trimmed to `viewportSpike.ts` only (probeFit takes corner fractions; `setFunctionalMs`).
 
@@ -145,7 +145,7 @@ jumped to under the old code. Andrew to say whether such a Scene exists.
   No padding on either axis; existing presets keep their framing. The residue fits one
   UNVERIFIED hypothesis: OBR's internal viewport height differs from `getHeight()` by ~1/7px
   (0.000138 x ~1030px; a centred box then shifts 1/14px = the constant 0.0714). Sub-pixel; ignore.
-- Wire functional recall (preset rows, Player Images) through the animator with `functionalMs`.
+- Wire functional recall (preset rows, Player Tokens) through the animator with `functionalMs`.
 - GM settings UI. **All labels/tooltips need Andrew's approval before going in.**
 
 ## Phase 2: background-page spike (BUILT, NOT YET RUN)
@@ -234,14 +234,14 @@ confidence during a big reveal that everyone is looking at the right part of the
 ## Phases
 
 0. Migration fix + repair: done, needs live test. (approved)
-1. Animation engine + GM settings: core done; animator, settings rename, fit check, UI to do. (approved)
+1. Animation engine + GM settings: DONE 2026-11-07 (settings UI `a74d77a`, live tests 1-3 passed). (approved)
 2. Background-page animation spike: DONE 2026-11-07, background page + timer clock. (approved)
 3. Cinematic Mode + Sync (GM-verified A→B shots). Needs approval.
 4. Confirmations + GM confidence monitor. Needs approval.
 5. Hardening: docs, help page, README, edge cases. Needs approval.
 
 ## Open questions for Andrew
-- Defaults/limits: functional 540ms (CONFIRMED) within 100-2000?; cinematic 3000ms (500-15000)?
+- ~~Defaults/limits~~ CONFIRMED 2026-11-07: functional 540ms (100-2000), cinematic 3000ms (500-15000).
 - Is there a Scene with jump-to-viewport data to live-test phase 0?
 - Neutral slot fill: literal white, or a Catppuccin surface token?
 - Commit phase 0 + phase 1 core before or after the live test?

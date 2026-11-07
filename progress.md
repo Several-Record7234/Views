@@ -20,15 +20,29 @@ Cinematic Mode design, the phase list and every live-test result.
   ready; stopgap notice. All three cases live-tested (present, absent, late).
 - All pushed to origin/main 2026-11-07. 62 tests, build clean.
 
+### Done (2026-11-07 evening)
+- **Phase 1 GM settings UI** `a74d77a`: gear button (GM only) opens an inline panel, Jump
+  duration and Cinematic duration in seconds plus Cinematic ease-in. Saves on blur/Enter,
+  Escape reverts, clamps to limits, fresh-read before write. Copy approved (Set A). Limits
+  CONFIRMED: jump 0.1-2s (0.54), Cinematic 0.5-15s (3), ease-in on. Live tests 1-3 PASSED
+  (2s jump on a player client; clamping/Escape; no gear for players). **Test 4 (locked note on
+  a newer-format Room) not yet run.**
+- **Title row** (Murmur/Flicker style): "Views - view presets", Discord then Help links. The
+  in-popover `?` toggle is gone, which fixed the top-row overflow (confirmed, no scrollbar).
+  "Player Images" renamed "Player Tokens" everywhere incl. the 0.1.0 changelog (approved).
+
 ### Immediate next actions
-- [ ] Phase 1 GM settings UI (functional + cinematic durations, cinematic ease-in). **All copy
-      needs Andrew's approval.**
+- [ ] **Help page**: the Help link targets `https://views.several-record.com/help.html`, which
+      does not exist yet (no `build-help.js`). Port the CSP-safe template; seed it from the
+      now-unused `src/components/Help.tsx`, then delete that file.
 - [ ] Phase 3: Cinematic Mode strip + Sync (see plan). Replace the background notice with a
       greyed-out Cinematic switch + hover tip when that UI lands.
 
 ### Open questions
-- Functional limits 100-2000ms? Cinematic defaults 3000ms (500-15000)?
 - Neutral slot fill: literal white or a Catppuccin surface token?
+- Help list wording "player-owned images (typically their character tokens)" may want to
+  follow the Player Tokens rename (Andrew's call).
+- `#app` is 340px wide in a 300px popover; harmless now, but the likely root of the overflow.
 - Catch-up for late joiners to a Cinematic shot.
 
 ## 2026-08-14: Manifest-version injection bug fixed (portfolio-wide audit)
@@ -185,3 +199,4 @@ All 17 review issues resolved across 8 phases. Each phase built and tested clean
 - 2026-11-06 23:30 -- SESSION END: viewport spike measured; phase 0 migration fix+repair and phase 1 animation core built (uncommitted); phase 2 background spike built, not run; Cinematic Mode design agreed (see cinematic-mode-plan.md)
 - 2026-11-07 17:27 -- SESSION START: settings rename to cinematic-only ease-in, then phase 2 background-page spike
 - 2026-11-07 20:56 -- SESSION END: background-page animator + exponential recall (540ms) + absent-background fallback built, live-tested, committed and pushed (f5e710b)
+- 2026-11-07 21:28 -- SESSION START: phase 1 GM animation settings UI (recall + Cinematic durations, Cinematic ease-in)

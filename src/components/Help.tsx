@@ -9,7 +9,7 @@ export const Help = () => (
         <ul className="help">
             <li>Use the "Reset View" button to move your viewport back to the Scene Default.</li>
             <li>
-                Use the "Player Images" button to move to the location of player-owned images
+                Use the "Player Tokens" button to move to the location of player-owned images
                 (typically their character tokens).
             </li>
             <li>
