@@ -8,6 +8,7 @@ import { Icon } from './atoms/Icon.tsx';
 import { Button } from './atoms/Button.tsx';
 import { ControlGroup } from './ControlGroup.tsx';
 import { Help } from './Help.tsx';
+import { AnimationSettingsPanel } from './AnimationSettingsPanel.tsx';
 import { ErrorBoundary } from './ErrorBoundary.tsx';
 import { useBackgroundStatus } from '../context/useBackgroundStatus.ts';
 import { watchBackground } from '../viewport/watchBackground.ts';
@@ -45,6 +46,8 @@ const Content = () => {
     const allPlayers = [currentUser, ...(players ?? [])];
     const [showFilters, setShowFilters] = useState<boolean>(false);
     const [showHelp, setShowHelp] = useState<boolean>(false);
+    const [showAnimationSettings, setShowAnimationSettings] = useState<boolean>(false);
+    const isGM = currentUser.role === 'GM';
 
     // Group presets by owner in a single pass. Presets whose owner is absent from
     // the party (no playerId, or an id not in allPlayers) fall into the unowned
@@ -83,6 +86,16 @@ const Content = () => {
                         onClick={() => setShowFilters((prev) => !prev)}>
                         <Icon name="filter_list" size="small" />
                     </Button>
+                    {isGM && (
+                        <Button
+                            aria-label="Animation settings (GM)"
+                            aria-pressed={showAnimationSettings}
+                            title="Animation settings (GM)"
+                            className={`narrowest-cell ${showAnimationSettings ? 'enabled' : ''}`}
+                            onClick={() => setShowAnimationSettings((prev) => !prev)}>
+                            <Icon name="settings" size="small" />
+                        </Button>
+                    )}
                     <Button
                         aria-label={showHelp ? 'Hide help' : 'Show help'}
                         className={`narrowest-cell ${showHelp ? 'enabled' : ''}`}
@@ -148,6 +161,7 @@ const Content = () => {
                         </div>
                     </div>
                 )}
+                {isGM && showAnimationSettings && <AnimationSettingsPanel />}
             </section>
             {showHelp && <Help />}
             <ul className="extension-section">
