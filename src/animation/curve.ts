@@ -47,6 +47,18 @@ export const fitBox = (box: Box, size: ViewportSize): Transform => {
 };
 
 /**
+ * The world area a viewport of this size actually shows once `box` is fitted:
+ * the box, padded out along one axis to the viewport's aspect ratio.
+ */
+export const framedBox = (box: Box, size: ViewportSize): Box => {
+    const { position, scale } = fitBox(box, size);
+    return {
+        min: { x: -position.x / scale, y: -position.y / scale },
+        max: { x: (size.width - position.x) / scale, y: (size.height - position.y) / scale },
+    };
+};
+
+/**
  * The viewport at eased progress `e` (0..1) from `from` to `to`.
  *
  * Scale is interpolated logarithmically so the zoom rate looks even. The world

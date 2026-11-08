@@ -31,9 +31,16 @@ Cinematic Mode design, the phase list and every live-test result.
   in-popover `?` toggle is gone, which fixed the top-row overflow (confirmed, no scrollbar).
   "Player Images" renamed "Player Tokens" everywhere incl. the 0.1.0 changelog (approved).
 
+### Done (2026-11-08)
+- **Phase 3, Cinematic Mode + Sync**: GM-only panel (clapperboard toggle, A/B slots, swap;
+  Preview/Go/Stop row and Current view row while on), per-row ▶/■ slot pickers, Sync with a
+  fresh Party-roster GM check, Stop scoped to the shot id, Sync View paused for a shot and
+  re-latched after, slots sent as the GM's framed area (no end-of-shot jolt). Settings panel
+  notes when this device's background task is absent. All 32 checklist items PASSED live,
+  incl. forged shot/stop refused. Sync View message costs measured (see plan). Chaining deferred.
+
 ### Immediate next actions
-- [ ] Phase 3: Cinematic Mode strip + Sync (see plan). Replace the background notice with a
-      greyed-out Cinematic switch + hover tip when that UI lands.
+- [ ] Phase 4: confirmations + GM confidence monitor (see plan). Needs approval.
 - [ ] **Help page, AFTER phase 3** (Andrew, 2026-11-07): write a comprehensive `README.md`
       covering Cinematic Mode, then generate `/help.html` from it on CF Pages via the project
       template's CSP-safe `build-help.js` (JS in `public/help.js`, no inline `<script>`). Until
@@ -204,3 +211,4 @@ All 17 review issues resolved across 8 phases. Each phase built and tested clean
 - 2026-11-07 20:56 -- SESSION END: background-page animator + exponential recall (540ms) + absent-background fallback built, live-tested, committed and pushed (f5e710b)
 - 2026-11-07 21:28 -- SESSION START: phase 1 GM animation settings UI (recall + Cinematic durations, Cinematic ease-in)
 - 2026-11-07 22:09 -- SESSION END: GM animation settings panel (a74d77a) + title row and Player Tokens rename (19d017c), live tests 1-3 passed, all pushed; help page moved after phase 3
+- 2026-11-08 14:24 -- SESSION START: phase 3, Cinematic Mode strip (A/B slots, Preview, Go) + GM-verified Sync

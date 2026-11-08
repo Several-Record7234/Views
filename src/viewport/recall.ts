@@ -12,6 +12,10 @@ const nativeRecall = async (to: ShotTarget): Promise<void> => {
     else await OBR.viewport.animateTo(to.transform);
 };
 
+// Sync View needs no special case here. OBR mirrors the viewport at ~10 messages/s
+// while it moves, for native animateTo exactly as for our frames (measured by
+// Andrew, 2026-11-08: 12-13 messages for a native jump, whose exponential tail
+// keeps it moving ~1s), so our 540ms curve, which stops dead, costs slightly LESS.
 export const requestRecall = async (to: ShotTarget): Promise<void> => {
     if (useBackgroundStatus.getState().status !== 'ready') return nativeRecall(to);
     const request: RecallRequest = { kind: 'recall', to, sentAt: epochNow() };

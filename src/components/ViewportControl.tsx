@@ -3,12 +3,20 @@ import { useState } from 'react';
 import { Button } from './atoms/Button';
 import { Icon } from './atoms/Icon';
 
+/** Present only while the GM is in Cinematic Mode: the row's delete button gives way to slot pickers. */
+export type CinematicRowControls = {
+    slot: 'start' | 'end' | null;
+    onSetStart: () => void;
+    onSetEnd: () => void;
+};
+
 type ViewportControlProps = {
     viewport: StarredBox | StarredLegacy;
     deleteViewport: ViewportHandler;
     jumpTo: ViewportHandler;
     color?: string;
     disableDeletion: boolean;
+    cinematic?: CinematicRowControls;
 };
 export const ViewportControl: React.FC<ViewportControlProps> = ({
     viewport,
@@ -16,8 +24,41 @@ export const ViewportControl: React.FC<ViewportControlProps> = ({
     color,
     deleteViewport,
     disableDeletion,
+    cinematic,
 }) => {
     const [deleting, setDeleting] = useState<boolean>(false);
+    if (cinematic) {
+        const slotClass = cinematic.slot === 'start' ? 'slot-start' : cinematic.slot === 'end' ? 'slot-end' : '';
+        return (
+            <li className="row" key={viewport.id}>
+                <Button
+                    aria-label={`Go to viewport: ${viewport.name}`}
+                    onClick={() => jumpTo(viewport)}
+                    className={`wide-cell owned ${slotClass}`}
+                    style={{ borderColor: color }}>
+                    {cinematic.slot === 'start' && <Icon name="play_arrow" size="small" />}
+                    {cinematic.slot === 'end' && <Icon name="stop" size="small" />}
+                    {viewport.name}
+                </Button>
+                <Button
+                    className={`narrowest-cell ${cinematic.slot === 'start' ? 'enabled' : ''}`}
+                    title="Set as start"
+                    aria-label={`Set ${viewport.name} as start`}
+                    aria-pressed={cinematic.slot === 'start'}
+                    onClick={cinematic.onSetStart}>
+                    <Icon name="play_arrow" size="small" />
+                </Button>
+                <Button
+                    className={`narrowest-cell ${cinematic.slot === 'end' ? 'enabled' : ''}`}
+                    title="Set as end"
+                    aria-label={`Set ${viewport.name} as end`}
+                    aria-pressed={cinematic.slot === 'end'}
+                    onClick={cinematic.onSetEnd}>
+                    <Icon name="stop" size="small" />
+                </Button>
+            </li>
+        );
+    }
     return (
         <li className="row" key={viewport.id}>
             {deleting ? (

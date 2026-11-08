@@ -12,6 +12,8 @@ import { AnimationSettingsPanel } from './AnimationSettingsPanel.tsx';
 import { ErrorBoundary } from './ErrorBoundary.tsx';
 import { useBackgroundStatus } from '../context/useBackgroundStatus.ts';
 import { watchBackground } from '../viewport/watchBackground.ts';
+import { useCinematic } from '../viewport/useCinematic.ts';
+import { CinematicStrip } from './CinematicStrip.tsx';
 
 export const Views = () => {
     const { isReady } = useSceneReady();
@@ -47,6 +49,18 @@ const Content = () => {
     const [showFilters, setShowFilters] = useState<boolean>(false);
     const [showAnimationSettings, setShowAnimationSettings] = useState<boolean>(false);
     const isGM = currentUser.role === 'GM';
+    const [cinematicOn, setCinematicOn] = useState<boolean>(false);
+    const cinematic = useCinematic(starredViewports);
+    // Cinematic shots are animated by the background page; without it there is no Cinematic Mode.
+    const cinematicAvailable = backgroundStatus === 'ready';
+    const showCinematic = isGM && cinematicOn && cinematicAvailable;
+    const cinematicFor = showCinematic
+        ? (viewport: (typeof starredViewports)[number]) => ({
+              slot: cinematic.slotOf(viewport.id),
+              onSetStart: () => cinematic.setPreset('start', viewport.id),
+              onSetEnd: () => cinematic.setPreset('end', viewport.id),
+          })
+        : undefined;
 
     // Group presets by owner in a single pass. Presets whose owner is absent from
     // the party (no playerId, or an id not in allPlayers) fall into the unowned
@@ -97,6 +111,28 @@ const Content = () => {
                         </Button>
                     )}
                 </div>
+                {isGM && (
+                    <CinematicStrip
+                        active={showCinematic}
+                        available={cinematicAvailable}
+                        unavailableReason={
+                            backgroundStatus === 'missing'
+                                ? "Cinematic Mode unavailable: Views' background task is absent."
+                                : null
+                        }
+                        onToggle={() => setCinematicOn((prev) => !prev)}
+                        startLabel={cinematic.startLabel}
+                        endLabel={cinematic.endLabel}
+                        onSwap={cinematic.swap}
+                        onCaptureStart={() => cinematic.capture('start')}
+                        onCaptureEnd={() => cinematic.capture('end')}
+                        onPreview={cinematic.preview}
+                        onGo={cinematic.go}
+                        onStop={cinematic.stop}
+                        canStop={cinematic.canStop}
+                        notice={cinematic.notice}
+                    />
+                )}
                 {showFilters && (
                     <div className="filter">
                         <div className="filters-section flex-row">
@@ -168,6 +204,7 @@ const Content = () => {
                                 color: player.color,
                                 viewports: presetsByPlayer.get(player.id) ?? [],
                                 jumpTo,
+                                cinematicFor,
                                 key: player.id,
                             }}
                         />
@@ -178,16 +215,11 @@ const Content = () => {
                         deleteViewport,
                         viewports: unownedPresets,
                         jumpTo,
+                        cinematicFor,
                     }}
                 />
             </ul>
             <section className="extension-section">
-                {backgroundStatus === 'missing' && (
-                    <div className="background-notice" role="status">
-                        Views' background task absent; jumps use default animation, cinematic
-                        transitions unavailable.
-                    </div>
-                )}
                 {metadataError && (
                     <div className="metadata-error" role="alert">
                         This Scene's saved viewports could not be read and may be corrupted. Saving

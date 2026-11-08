@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ease, fitBox, interpolate, centreOf, Transform, Easing } from "../animation/curve";
+import { ease, fitBox, framedBox, interpolate, centreOf, Transform, Easing } from "../animation/curve";
 import {
   decodeAnimationSettings,
   encodeAnimationSettings,
@@ -132,5 +132,35 @@ describe("animation settings codec", () => {
     expect(settings.functionalMs).toBe(100);
     expect(settings.cinematicMs).toBe(defaultAnimationSettings.cinematicMs);
     expect(settings.cinematicEaseIn).toBe(defaultAnimationSettings.cinematicEaseIn);
+  });
+});
+
+describe("framedBox", () => {
+  const gm = { width: 1600, height: 900 };
+  const tall = { min: { x: 0, y: 0 }, max: { x: 100, y: 400 } };
+
+  it("contains the box and matches the viewport's aspect ratio", () => {
+    const framed = framedBox(tall, gm);
+    expect(framed.min.x).toBeLessThanOrEqual(0);
+    expect(framed.max.x).toBeGreaterThanOrEqual(100);
+    expect(framed.min.y).toBeCloseTo(0, 9);
+    expect(framed.max.y).toBeCloseTo(400, 9);
+    const width = framed.max.x - framed.min.x;
+    const height = framed.max.y - framed.min.y;
+    expect(width / height).toBeCloseTo(1600 / 900, 9);
+  });
+
+  it("keeps the box centred", () => {
+    const framed = framedBox(tall, gm);
+    expect((framed.min.x + framed.max.x) / 2).toBeCloseTo(50, 9);
+  });
+
+  it("fits to the same transform as the box it frames", () => {
+    // So the GM's own shot is unchanged by sending the framed area instead of the preset box.
+    const a = fitBox(tall, gm);
+    const b = fitBox(framedBox(tall, gm), gm);
+    expect(b.scale).toBeCloseTo(a.scale, 9);
+    expect(b.position.x).toBeCloseTo(a.position.x, 6);
+    expect(b.position.y).toBeCloseTo(a.position.y, 6);
   });
 });

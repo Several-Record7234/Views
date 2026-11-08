@@ -231,12 +231,60 @@ Confirmations (phase 4): each player replies once per shot, event-driven, with a
 sees a per-player confidence monitor in the Cinematic strip. Purpose: troubleshooting, and
 confidence during a big reveal that everyone is looking at the right part of the Scene.
 
+## Phase 3: DONE 2026-11-08, all 32 live checks passed
+
+Decisions (Andrew, 2026-11-08): slots are picked with per-row ▶/■ buttons that replace the
+delete button in Cinematic Mode (to be reassessed after use); Stop built now; **Chaining
+deferred** until the mode has been used (it may not be worthwhile); neutral slot fill is
+Surface0, not white.
+- `cinematicProtocol.ts` (pure, tested): channel `dev.views/cinematic`; `shot` {id, from, to,
+  durationMs, easeIn} and `stop` {id}. Trust: own connection, or a GM in a FRESH
+  `party.getPlayers()` per message. Duration clamped on receipt.
+- Preview = LOCAL; Go and Stop = ALL. **Stop names the shot id**, and the background page
+  only cancels if that shot is still running, so a player's own preset jump is never cut short.
+- **Sync View**: Andrew expects the GM's latched Sync View to re-send every frame of the shot and
+  fight each client's own animation, so before ANY shot (Preview included, else players would
+  follow a Preview) the popover turns it off if on, and says so. **Re-latched when the shot
+  ends** (completed, stopped, or replaced by a recall) by the background page, which carries
+  the pending resume across a superseding Go (whose own `resumeSyncView` is false). Toggling is
+  cheap (Andrew 2026-11-08). OFF = presence `change` patch (`/syncView: false`) + server
+  `commit` ack, 2 messages, no viewport box. ON = 3 messages: FIRST a `custom` `id 3` carrying
+  the GM's current view `{min, max}`, then the presence patch (`/syncView: true`) + ack. So
+  re-latching pushes the GM's framing to players immediately. At a shot's end that means
+  players re-fit from their own fit of B to the GM's visible area: a small shift where aspect
+  ratios differ. Watch for a jolt in live testing; if jarring, fit B to the GM's viewport when
+  building the shot so the re-latch has nothing to correct.
+  Known gap: a GM who turns Sync View off themselves mid-shot gets it turned back on.
+  **MEASURED 2026-11-08 (Andrew, `api/realtime/party` socket):** with Sync View latched, ANY
+  viewport motion is mirrored as it moves: one full-state `custom` message (`id 1`, the view as
+  a world box `viewport: {<id>: {state: {min, max}}}`), then `id 2` patches every ~100-117ms
+  (throttled to ~10/s, not per frame), then an empty close `{item: {}, viewport: {}}`.
+  - Native `animateTo` (Outliner double-click, and Views' jump while it briefly went native):
+    **12-13 messages**, because its exponential tail keeps moving for ~1s. (An earlier capture
+    reading "native = 2 messages" was abridged; superseded.)
+  - Our custom recall: 22 messages for one ~2s jump (curve: x0.71 per 100ms = tau ~290ms =
+    expo-out at 2000ms; INFERRED the Jump duration was still 2s). So ~2 + duration/100ms: about
+    8 at the default 540ms, slightly CHEAPER than native because it stops dead.
+  - So no Sync View special case for functional recalls: a brief native fallback was built and
+    REVERTED the same day. Cinematic still pauses Sync View, since a 3s shot would be ~32
+    messages and players would follow the GM's 10Hz samples instead of their own curve.
+    Re-latch after a completed shot CONFIRMED live (3-message bundle on `/party`).
+  - Outliner sent two extra `id 3` view-box messages before its jump (same shape as the first
+    message of the re-latch bundle); cause not investigated. Skill-corpus candidate.
+- The yellow background notice is gone: the 🎬 toggle is disabled with a hover reason instead.
+- **End-of-shot jolt (test 27, 2026-11-08):** with Sync View re-latched, players eased from
+  their own fit of B to the GM's visible area. Fix: slots are sent as `framedBox` (the area
+  the GM's viewport shows for the box), so players end on exactly what the re-latch pushes.
+  Players with a different aspect see the GM's framing plus a margin. Needs a retest.
+- Dev builds expose `window.OBR` in the popover iframe (`main.ts`, `import.meta.env.DEV`
+  only), for console tests such as the forged-Cinematic trust check.
+
 ## Phases
 
 0. Migration fix + repair: done, needs live test. (approved)
 1. Animation engine + GM settings: DONE 2026-11-07 (settings UI `a74d77a`, live tests 1-3 passed). (approved)
 2. Background-page animation spike: DONE 2026-11-07, background page + timer clock. (approved)
-3. Cinematic Mode + Sync (GM-verified A→B shots). Needs approval.
+3. Cinematic Mode + Sync (GM-verified A→B shots): DONE 2026-11-08. (approved)
 4. Confirmations + GM confidence monitor. Needs approval.
 5. Hardening: docs, help page, README, edge cases. Needs approval.
 

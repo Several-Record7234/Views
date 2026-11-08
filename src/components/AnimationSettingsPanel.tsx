@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { durationLimits } from '../animation/settings';
 import { DurationKey, formatSeconds, parseSecondsInput } from '../animation/settingsInput';
 import { useAnimationSettings } from '../animation/useAnimationSettings';
+import { useBackgroundStatus } from '../context/useBackgroundStatus';
 
 // GM-only: shown from the gear button in the top row. Writes go to Room
 // metadata, which the background page on every client already follows.
 export const AnimationSettingsPanel = () => {
     const { settings, writable, loaded, save } = useAnimationSettings();
     const disabled = !writable;
+    const backgroundMissing = useBackgroundStatus((store) => store.status) === 'missing';
 
     const saveOrLog = (change: Parameters<typeof save>[0]) =>
         save(change).catch((error: unknown) => {
@@ -17,6 +19,13 @@ export const AnimationSettingsPanel = () => {
 
     return (
         <div className="filter text-xs">
+            {/* Settings stay editable: they live in the Room, and other clients' background pages still use them. */}
+            {backgroundMissing && (
+                <div className="background-notice" role="status">
+                    Views' background task is absent, so this device uses the default animation. Changes
+                    still apply to other players.
+                </div>
+            )}
             <DurationField
                 id="anim-functional"
                 label="Jump duration"
