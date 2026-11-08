@@ -40,6 +40,13 @@ Cinematic Mode design, the phase list and every live-test result.
   incl. forged shot/stop refused. Sync View message costs measured (see plan). Chaining deferred.
 
 ### Immediate next actions
+- [ ] **Phase 3.5** (Andrew to choose whether before phase 4; recommended first, small and
+      built from tested parts): GM preset jumps with Sync View latched become a synced short
+      shot (flat ~6 messages, smooth on players). Players can't opt out of a latched Sync View
+      (confirmed by Andrew), so the shot moves exactly the clients Sync View would have.
+      Today OBR mirrors the jump: ~10Hz, visibly step-wise on players, cost grows with duration
+      (22 messages at 2s). Differs from a Cinematic shot: Jump duration + `expo-out`, no snap
+      to A (each client starts where it is), only while Sync View is latched.
 - [ ] Phase 4: confirmations + GM confidence monitor (see plan). Needs approval.
 - [ ] **Help page, AFTER phase 3** (Andrew, 2026-11-07): write a comprehensive `README.md`
       covering Cinematic Mode, then generate `/help.html` from it on CF Pages via the project
@@ -49,7 +56,8 @@ Cinematic Mode design, the phase list and every live-test result.
       delete that file.
 
 ### Open questions
-- Neutral slot fill: literal white or a Catppuccin surface token?
+- Phase 4: a player's confirmation travels REMOTE to the GM, so each Go costs 1 + N messages
+  (N = players). Accept, or make confirmations opt-in?
 - Help list wording "player-owned images (typically their character tokens)" may want to
   follow the Player Tokens rename (Andrew's call).
 - `#app` is 340px wide in a 300px popover; harmless now, but the likely root of the overflow.
@@ -212,3 +220,4 @@ All 17 review issues resolved across 8 phases. Each phase built and tested clean
 - 2026-11-07 21:28 -- SESSION START: phase 1 GM animation settings UI (recall + Cinematic durations, Cinematic ease-in)
 - 2026-11-07 22:09 -- SESSION END: GM animation settings panel (a74d77a) + title row and Player Tokens rename (19d017c), live tests 1-3 passed, all pushed; help page moved after phase 3
 - 2026-11-08 14:24 -- SESSION START: phase 3, Cinematic Mode strip (A/B slots, Preview, Go) + GM-verified Sync
+- 2026-11-08 20:30 -- SESSION END: phase 3 Cinematic Mode + Sync built, 32 live checks passed, committed and pushed (ec73de1); Sync View message costs measured; phase 3.5 scoped (Sync View jumps as synced shots); next is phase 4
