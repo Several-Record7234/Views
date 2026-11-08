@@ -12,6 +12,7 @@ import {
   deriveFilteredPlayerIds,
   applyViewportDelete,
   calcItemsBoundingBox,
+  isPlayerOwnedImage,
   legacyTransformToBox,
   restoreDamagedLegacy,
 } from "../viewport/viewportHelpers";
@@ -180,7 +181,28 @@ describe("applyViewportDelete", () => {
   });
 });
 
+describe("isPlayerOwnedImage", () => {
+  const ids = ["p1", "p2"];
+
+  it("matches an image created by a non-GM player in the party", () => {
+    expect(isPlayerOwnedImage({ type: "IMAGE", createdUserId: "p2" }, ids)).toBe(true);
+  });
+
+  it("ignores other item types, even from a player", () => {
+    expect(isPlayerOwnedImage({ type: "SHAPE", createdUserId: "p1" }, ids)).toBe(false);
+  });
+
+  it("ignores images from the GM or a player who has left", () => {
+    expect(isPlayerOwnedImage({ type: "IMAGE", createdUserId: "gm" }, ids)).toBe(false);
+    expect(isPlayerOwnedImage({ type: "IMAGE", createdUserId: "p1" }, [])).toBe(false);
+  });
+});
+
 describe("calcItemsBoundingBox", () => {
+  it("returns null for no items, not an infinite box", () => {
+    expect(calcItemsBoundingBox([])).toBeNull();
+  });
+
   const item = (px: number, py: number, w: number, h: number, sx = 1, sy = 1) => ({
     image: { width: w, height: h },
     scale: { x: sx, y: sy },

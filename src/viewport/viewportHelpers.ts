@@ -55,6 +55,17 @@ export const applyViewportDelete = (
     return filtered.length ? filtered : undefined;
 };
 
+/**
+ * What the Player Tokens button frames: an image created by a non-GM player now in
+ * the party. Shared by the jump and the button's enabled state, so they never
+ * disagree. `type === 'IMAGE'` is exactly the SDK's `isImage`, which can't be
+ * imported here (the SDK does not load under Vitest).
+ */
+export const isPlayerOwnedImage = (
+    item: { type: string; createdUserId: string },
+    nonGMids: readonly string[],
+): boolean => item.type === 'IMAGE' && nonGMids.includes(item.createdUserId);
+
 type ItemBounds = {
     image: { width: number; height: number };
     scale: { x: number; y: number };
@@ -63,7 +74,10 @@ type ItemBounds = {
 
 export const calcItemsBoundingBox = (
     items: ItemBounds[],
-): { min: { x: number; y: number }; max: { x: number; y: number } } => {
+): { min: { x: number; y: number }; max: { x: number; y: number } } | null => {
+    // No items has no bounds. The fold below would return an infinite box, which
+    // the recall validator rightly rejects (and animateToBounds was once handed).
+    if (items.length === 0) return null;
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     items.forEach((item) => {
         const halfWidth = (item.image.width * item.scale.x) / 2;

@@ -36,6 +36,7 @@ const Content = () => {
         filterAbsent,
         showAbsentPlayers,
         jumpToPlayerItems,
+        hasPlayerTokens,
         metadataError,
     } = useViewport();
 
@@ -43,7 +44,7 @@ const Content = () => {
     useEffect(() => watchBackground(), []);
 
     const [draftViewportName, setDraftViewportName] = useState<string>('');
-    const { players, nonGMPlayers } = usePartyContext();
+    const { players } = usePartyContext();
     const currentUser = usePlayerContext();
     const allPlayers = [currentUser, ...(players ?? [])];
     const [showFilters, setShowFilters] = useState<boolean>(false);
@@ -91,7 +92,8 @@ const Content = () => {
                         onClick={jumpToPlayerItems}
                         className="wide-cell"
                         aria-label="Player Tokens"
-                        disabled={!Boolean(nonGMPlayers?.length)}>
+                        title={hasPlayerTokens ? undefined : 'No player-owned tokens in this Scene.'}
+                        disabled={!hasPlayerTokens}>
                         Player Tokens
                     </Button>
                     <Button

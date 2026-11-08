@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import OBR, { Vector2, Math2, isImage } from '@owlbear-rodeo/sdk';
+import OBR, { Item, Vector2, Math2, isImage } from '@owlbear-rodeo/sdk';
 import {
     SceneMetadata,
     StarredBox,
@@ -20,6 +20,7 @@ import {
     deriveFilteredPlayerIds,
     applyViewportDelete,
     calcItemsBoundingBox,
+    isPlayerOwnedImage,
     legacyTransformToBox,
     restoreDamagedLegacy,
 } from './viewportHelpers';
@@ -109,9 +110,7 @@ const constructStarredBox = ({
 });
 
 const getPlayerImages = async (nonGMids: string[]) => {
-    return (await OBR.scene.items.getItems((item) => nonGMids.includes(item.createdUserId))).filter(
-        isImage,
-    );
+    return (await OBR.scene.items.getItems((item) => isPlayerOwnedImage(item, nonGMids))).filter(isImage);
 };
 
 
@@ -151,6 +150,10 @@ export const useViewport = () => {
     const currentUser = usePlayerContext();
     const { id: currentUserId } = currentUser;
     const { nonGMPlayers } = usePartyContext();
+    const nonGMids = nonGMPlayers?.map(({ id }) => id) || [];
+    // A string, so the effect below re-runs when the set of players changes, not on every render.
+    const nonGMidsKey = JSON.stringify(nonGMids);
+    const [hasPlayerTokens, setHasPlayerTokens] = useState(false);
     const [metadata, setMetadata] = useState<SceneMetadata>(defaultSceneMetadata);
     // 'error' means the scene held data under our key that we could not parse;
     // writes are blocked in that state so we never clobber unreadable presets.
@@ -228,6 +231,25 @@ export const useViewport = () => {
         };
         fetchMetadata();
     }, []);
+    // Event-driven, not polled: OBR pushes item changes to this iframe anyway, and
+    // the handler is one cheap pass over the list it hands us.
+    useEffect(() => {
+        const ids: string[] = JSON.parse(nonGMidsKey);
+        const update = (items: Item[]) => setHasPlayerTokens(items.some((item) => isPlayerOwnedImage(item, ids)));
+        let unmounted = false;
+        OBR.scene.items
+            .getItems()
+            .then((items) => {
+                if (!unmounted) update(items);
+            })
+            .catch((error: unknown) => console.error('[Views] could not check for player tokens', error));
+        const unsubscribe = OBR.scene.items.onChange(update);
+        return () => {
+            unmounted = true;
+            unsubscribe();
+        };
+    }, [nonGMidsKey]);
+
     useEffect(() => {
         return OBR.scene.onMetadataChange((m) => {
             // Validate before trusting data from the SDK
@@ -337,11 +359,14 @@ export const useViewport = () => {
             },
         });
     };
-    const nonGMids = nonGMPlayers?.map(({ id }) => id) || [];
-
     const jumpToPlayerItems = async () => {
         const items = await getPlayerImages(nonGMids);
-        await jumpToBoundingBox({ boundingCorners: calcItemsBoundingBox(items) });
+        const boundingCorners = calcItemsBoundingBox(items);
+        if (!boundingCorners) {
+            console.info('[Views] Player Tokens: no player-owned images in this Scene; nothing to jump to');
+            return;
+        }
+        await jumpToBoundingBox({ boundingCorners });
     };
 
     const filteredPlayerIds = deriveFilteredPlayerIds(localFilters.players);
@@ -355,6 +380,7 @@ export const useViewport = () => {
         filterPlayer,
         filterAbsent,
         jumpToPlayerItems,
+        hasPlayerTokens,
         filteredPlayerIds,
         showAbsentPlayers: localFilters.absents,
         metadataError: status === 'error',
