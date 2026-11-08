@@ -39,14 +39,15 @@ Cinematic Mode design, the phase list and every live-test result.
   notes when this device's background task is absent. All 32 checklist items PASSED live,
   incl. forged shot/stop refused. Sync View message costs measured (see plan). Chaining deferred.
 
+- **Phase 3.5, synced jumps** (evening): a GM preset or Player Tokens jump with Sync View
+  latched is one `jump` message played on every client, paused and re-latched by the GM's
+  background page. Measured 8 messages (6 predicted; 2 trailing mirror messages, accepted), so
+  cost-neutral at 540ms; the gain is smooth motion on players. All 9 live checks passed.
+- **Player Tokens**: fixed an infinite-box console error with no player tokens (predates 3.5),
+  and the button is now greyed with the hover reason "No player-owned tokens in this Scene."
+  (approved) via `scene.items.onChange`. Live checks 10-12 passed. 90 tests, build clean.
+
 ### Immediate next actions
-- [ ] **Phase 3.5** (Andrew to choose whether before phase 4; recommended first, small and
-      built from tested parts): GM preset jumps with Sync View latched become a synced short
-      shot (flat ~6 messages, smooth on players). Players can't opt out of a latched Sync View
-      (confirmed by Andrew), so the shot moves exactly the clients Sync View would have.
-      Today OBR mirrors the jump: ~10Hz, visibly step-wise on players, cost grows with duration
-      (22 messages at 2s). Differs from a Cinematic shot: Jump duration + `expo-out`, no snap
-      to A (each client starts where it is), only while Sync View is latched.
 - [ ] Phase 4: confirmations + GM confidence monitor (see plan). Needs approval.
 - [ ] **Help page, AFTER phase 3** (Andrew, 2026-11-07): write a comprehensive `README.md`
       covering Cinematic Mode, then generate `/help.html` from it on CF Pages via the project
@@ -221,3 +222,4 @@ All 17 review issues resolved across 8 phases. Each phase built and tested clean
 - 2026-11-07 22:09 -- SESSION END: GM animation settings panel (a74d77a) + title row and Player Tokens rename (19d017c), live tests 1-3 passed, all pushed; help page moved after phase 3
 - 2026-11-08 14:24 -- SESSION START: phase 3, Cinematic Mode strip (A/B slots, Preview, Go) + GM-verified Sync
 - 2026-11-08 20:30 -- SESSION END: phase 3 Cinematic Mode + Sync built, 32 live checks passed, committed and pushed (ec73de1); Sync View message costs measured; phase 3.5 scoped (Sync View jumps as synced shots); next is phase 4
+- 2026-11-08 20:53 -- SESSION START: phase 3.5, GM preset jumps with Sync View latched become a synced short shot (pending Andrew's go-ahead over phase 4)

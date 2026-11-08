@@ -279,9 +279,54 @@ Surface0, not white.
 - Dev builds expose `window.OBR` in the popover iframe (`main.ts`, `import.meta.env.DEV`
   only), for console tests such as the forged-Cinematic trust check.
 
+## Phase 3.5: synced jumps while Sync View is latched (DONE 2026-11-08, all 12 live checks passed)
+
+Andrew approved 2026-11-08, scope presets + Player Tokens (Reset View stays native: OBR's
+`reset()` computes its own target, so there is no box to send).
+- Decided in the GM's **background page**, not the popover: on each recall it checks
+  `role === 'GM' && getSyncView()` (or a pause it still has to undo). If so, it turns Sync View
+  off, sends one ALL `jump` {id, to, durationMs} on `dev.views/cinematic` (same GM trust check),
+  and re-latches when the jump ends, through the same path as Cinematic shots.
+- `to` is the GM's framed area (`syncedJumpArea`), so the re-latch has nothing to correct.
+  Duration is the Jump duration (clamped to its limits), `expo-out`, and there's no `from`.
+- The running id is claimed before sending, so a shot ending in that gap can't re-latch
+  underneath the jump. If the send fails: re-latch, then jump locally (mirrored, as before).
+- No popover change and no new UI copy.
+- **MEASURED 2026-11-08 (check 2): 8 messages, not 6.** Jump 1, pause 2 and re-latch 3 as
+  predicted, plus an `id 2` patch and an `id 1` close ~73ms after the re-latch commit, carrying
+  the same box (no visible effect). UNVERIFIED cause: OBR's ~10/s mirror throttle flushing the
+  last frames once Sync View is back on. Re-latch box = jump `to` to ~1e-13, so no jolt.
+  ACCEPTED by Andrew: at the default 540ms this is cost-neutral against mirroring (~8); the
+  gain is smooth motion on players, plus a flat cost at longer durations (8 vs 22 at 2s). A
+  delayed re-latch was rejected (timing-dependent, for 2 harmless messages).
+  Also seen: the jump went out on the socket 33ms BEFORE the pause patch, though the code awaits
+  `setSyncView(false)` first, so it resolves before the server is told. No mirror stream
+  resulted.
+
+Live checks (GM + one player, Sync View latched unless stated). ALL PASSED 2026-11-08
+(check 2 measured 8 messages, accepted above):
+1. GM preset jump: player moves smoothly (not 10Hz steps); GM's Sync View flicks off and back on.
+2. Socket (`api/realtime/party`): ~6 messages per jump, no `id 2` mirror stream during it.
+3. End of jump: no jolt on the player when the re-latch lands (try a different aspect ratio).
+4. Player Tokens with Sync View latched: same as 1.
+5. Two preset clicks in quick succession: second supersedes; Sync View ends latched, once.
+6. Preset click mid Cinematic Go: jump supersedes on both clients; Sync View re-latched at end.
+7. Sync View OFF: GM jump stays local (player does not move).
+8. Player's own jumps unaffected (they never sync); legacy preset jump with Sync View latched.
+9. Reset View with Sync View latched: still native and mirrored (unchanged).
+
+Player Tokens enabled state (Andrew approved 2026-11-08, tooltip copy approved): greyed with
+the hover reason "No player-owned tokens in this Scene." whenever no image was created by a
+non-GM player now in the party (same predicate as the jump, `isPlayerOwnedImage`). Watched via
+`scene.items.onChange` and the party list, both local pushes, no polling.
+10. Scene with no player images: greyed on open, tooltip shows; no console error.
+11. A player drops a token in: enables without reopening; delete it: greys again.
+12. The token's owner leaves the Room: greys; rejoins: enables.
+
 ## Phases
 
 0. Migration fix + repair: done, needs live test. (approved)
+3.5. Synced jumps while Sync View is latched, plus the Player Tokens enabled state: DONE 2026-11-08. (approved)
 1. Animation engine + GM settings: DONE 2026-11-07 (settings UI `a74d77a`, live tests 1-3 passed). (approved)
 2. Background-page animation spike: DONE 2026-11-07, background page + timer clock. (approved)
 3. Cinematic Mode + Sync (GM-verified A→B shots): DONE 2026-11-08. (approved)
