@@ -2,9 +2,10 @@
 // One broadcast per Go or Stop, never per frame (OBR's host pays per message);
 // each client animates locally from the boxes. No SDK imports, so it runs
 // under Vitest.
-import { Box } from './curve';
-import { Shot } from './animator';
+import { Box, ViewportSize, framedBox } from './curve';
+import { Shot, ShotTarget } from './animator';
 import { durationLimits } from './settings';
+import { legacyTransformToBox } from '../viewport/viewportHelpers';
 
 export const cinematicChannel = 'dev.views/cinematic';
 
@@ -20,13 +21,26 @@ export interface CinematicShotMessage {
     resumeSyncView: boolean;
 }
 
+/**
+ * A GM's preset jump while their Sync View is latched, played on every client
+ * instead of OBR mirroring it (~10 messages/s, step-wise on players). No `from`:
+ * players are already on the GM's view, so each client starts where it is.
+ * Sent by the GM's background page, which pauses and re-latches Sync View itself.
+ */
+export interface SyncedJumpMessage {
+    kind: 'jump';
+    id: string;
+    to: Box;
+    durationMs: number;
+}
+
 /** Halts the named shot only, so a player's own preset jump is never cut short. */
 export interface CinematicStopMessage {
     kind: 'stop';
     id: string;
 }
 
-export type CinematicMessage = CinematicShotMessage | CinematicStopMessage;
+export type CinematicMessage = CinematicShotMessage | SyncedJumpMessage | CinematicStopMessage;
 
 const isVector = (value: unknown): boolean => {
     const v = value as Record<string, unknown> | null;
@@ -42,6 +56,9 @@ export const isCinematicMessage = (value: unknown): value is CinematicMessage =>
     if (typeof value !== 'object' || value === null) return false;
     const message = value as Record<string, unknown>;
     if (message.kind === 'stop') return typeof message.id === 'string';
+    if (message.kind === 'jump') {
+        return typeof message.id === 'string' && isBox(message.to) && Number.isFinite(message.durationMs);
+    }
     return (
         message.kind === 'shot' &&
         typeof message.id === 'string' &&
@@ -73,6 +90,25 @@ export const shouldHonourCinematic = (
 ): boolean =>
     senderConnectionId === ownConnectionId ||
     roster.some((player) => player.connectionId === senderConnectionId && player.role === 'GM');
+
+/**
+ * The area the sender's viewport shows at the end of the jump, which is what its
+ * Sync View re-latch then pushes. Each client fits that, so players finish on
+ * exactly the re-latched view (no end-of-shot correction, as for Cinematic slots).
+ * A transform target (legacy preset) already IS such an area.
+ */
+export const syncedJumpArea = (target: ShotTarget, size: ViewportSize): Box =>
+    target.kind === 'box' ? framedBox(target.box, size) : legacyTransformToBox(target.transform, size);
+
+/** A synced jump: from wherever each client is, on the functional recall curve. */
+export const toSyncedJumpShot = (message: SyncedJumpMessage): Shot => {
+    const { min, max } = durationLimits.functionalMs;
+    return {
+        to: { kind: 'box', box: message.to },
+        durationMs: Math.round(Math.min(max, Math.max(min, message.durationMs))),
+        easing: 'expo-out',
+    };
+};
 
 /** The shot each client plays: snap to A, then animate to B, fitted to its own viewport. */
 export const toCinematicShot = (message: CinematicShotMessage): Shot => {

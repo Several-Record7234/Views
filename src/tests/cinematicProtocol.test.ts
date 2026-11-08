@@ -2,9 +2,12 @@ import { describe, it, expect } from "vitest";
 import {
   CinematicShotMessage,
   RosterEntry,
+  SyncedJumpMessage,
   isCinematicMessage,
   shouldHonourCinematic,
+  syncedJumpArea,
   toCinematicShot,
+  toSyncedJumpShot,
 } from "../animation/cinematicProtocol";
 
 const shot: CinematicShotMessage = {
@@ -84,5 +87,51 @@ describe("toCinematicShot", () => {
   it("clamps the duration to the Cinematic limits", () => {
     expect(toCinematicShot({ ...shot, durationMs: 10 }).durationMs).toBe(500);
     expect(toCinematicShot({ ...shot, durationMs: 1e9 }).durationMs).toBe(15000);
+  });
+});
+
+const jump: SyncedJumpMessage = {
+  kind: "jump",
+  id: "j1",
+  to: { min: { x: 500, y: 500 }, max: { x: 600, y: 560 } },
+  durationMs: 540,
+};
+
+describe("synced jump", () => {
+  it("accepts a well-formed jump and rejects malformed ones", () => {
+    expect(isCinematicMessage(jump)).toBe(true);
+    expect(isCinematicMessage({ ...jump, id: undefined })).toBe(false);
+    expect(isCinematicMessage({ ...jump, to: { max: { x: 1, y: 1 } } })).toBe(false);
+    expect(isCinematicMessage({ ...jump, durationMs: NaN })).toBe(false);
+  });
+
+  it("starts where each client is, on the recall curve", () => {
+    const result = toSyncedJumpShot(jump);
+    expect(result.from).toBeUndefined();
+    expect(result.to).toEqual({ kind: "box", box: jump.to });
+    expect(result.easing).toBe("expo-out");
+    expect(result.durationMs).toBe(540);
+  });
+
+  it("clamps the duration to the Jump limits, not the Cinematic ones", () => {
+    expect(toSyncedJumpShot({ ...jump, durationMs: 10 }).durationMs).toBe(100);
+    expect(toSyncedJumpShot({ ...jump, durationMs: 3000 }).durationMs).toBe(2000);
+  });
+
+  it("sends a box as the area the sender's viewport shows for it", () => {
+    // A 100x50 box on a square viewport is width-bound, so the area grows to 100x100.
+    const area = syncedJumpArea({ kind: "box", box: { min: { x: 0, y: 0 }, max: { x: 100, y: 50 } } }, { width: 200, height: 200 });
+    expect(area.min.x).toBeCloseTo(0);
+    expect(area.max.x).toBeCloseTo(100);
+    expect(area.min.y).toBeCloseTo(-25);
+    expect(area.max.y).toBeCloseTo(75);
+  });
+
+  it("sends a transform (legacy preset) as the area it shows", () => {
+    const area = syncedJumpArea({ kind: "transform", transform: { position: { x: -100, y: -50 }, scale: 2 } }, { width: 200, height: 100 });
+    expect(area.min.x).toBeCloseTo(50);
+    expect(area.min.y).toBeCloseTo(25);
+    expect(area.max.x).toBeCloseTo(150);
+    expect(area.max.y).toBeCloseTo(75);
   });
 });
