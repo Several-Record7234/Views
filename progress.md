@@ -1,5 +1,36 @@
 # Views — progress.md
 
+## 2026-11-13: phase 4 confirmations + popover layout (committed + pushed)
+
+**Resume from [cinematic-mode-plan.md](cinematic-mode-plan.md)** ("Phase 4" has the design and results).
+
+### Done
+- Merged the web-session branch `e61d964` (feature notes in FEATURES_BUGS.md) by fast-forward.
+- **Phase 4** `4755454` + `aaec88a`: opt-in confirmations ("Ask players to confirm each Go",
+  GM settings panel, Room key `c`, default off). Monitor row under Preview/Go/Stop: one icon per
+  other client in party order, hover "<name>: <status>" (Waiting… / Arrived / Stopped / Failed /
+  No response). Shots are all-or-nothing: a player's own jumps are refused during a GM shot, with
+  an approved OBR toast "A GM Cinematic shot is playing; your Views preset was skipped."
+- **Cinematic UI**: bar-arrow start/end markers at the outside edges; play/stop on Go/Stop; a
+  filled slot clears on click (hover "<name> (Click to clear)" when truncated); clicking a row's
+  picked marker again clears it.
+- **Layout**: `#app` `min-width: 0` (measured cause of the sideways scrollbar); pinned header;
+  thin themed scrollbar with a stable gutter; 0.5rem side margins; preset names 12px.
+- Account signed in from two browsers listed once (`uniqueById`); React keys no longer spread
+  (`0d8d12d`).
+- All 13 phase 4 live checks PASSED. Capture: 6 clients = 7 sends, ~42 deliveries. 110 tests.
+
+### Immediate next actions
+- [ ] Help page: comprehensive `README.md` (incl. Cinematic Mode and confirmations), then
+      `/help.html` via the template's CSP-safe `build-help.js` (see the item below).
+- [ ] Phase 5 hardening (see plan).
+
+### Open questions
+- **Broadcast billing** (Andrew checking): does OBR bill a confirmed Go per send (1 + N) or per
+  delivery (~N + N², since REMOTE fans each reply out)? Confirmations stay off by default meanwhile.
+- Two clients on one account show two icons with the same tooltip name; disambiguate (eg. "(2)")?
+  Needs wording.
+
 ## 2026-11-07: viewport animation via background page (committed + pushed)
 
 **Resume from [cinematic-mode-plan.md](cinematic-mode-plan.md)**: measured SDK facts, the agreed
@@ -39,16 +70,16 @@ Cinematic Mode design, the phase list and every live-test result.
   notes when this device's background task is absent. All 32 checklist items PASSED live,
   incl. forged shot/stop refused. Sync View message costs measured (see plan). Chaining deferred.
 
-- **Phase 3.5, synced jumps** (evening): a GM preset or Player Tokens jump with Sync View
+- **Phase 3.5, synced jumps** (evening, `3b68767`, pushed): a GM preset or Player Tokens jump with Sync View
   latched is one `jump` message played on every client, paused and re-latched by the GM's
   background page. Measured 8 messages (6 predicted; 2 trailing mirror messages, accepted), so
   cost-neutral at 540ms; the gain is smooth motion on players. All 9 live checks passed.
-- **Player Tokens**: fixed an infinite-box console error with no player tokens (predates 3.5),
+- **Player Tokens** (`957a513`, pushed): fixed an infinite-box console error with no player tokens (predates 3.5),
   and the button is now greyed with the hover reason "No player-owned tokens in this Scene."
   (approved) via `scene.items.onChange`. Live checks 10-12 passed. 90 tests, build clean.
 
 ### Immediate next actions
-- [ ] Phase 4: confirmations + GM confidence monitor (see plan). Needs approval.
+- [x] Phase 4: confirmations + GM confidence monitor. DONE 2026-11-13 (see above).
 - [ ] **Help page, AFTER phase 3** (Andrew, 2026-11-07): write a comprehensive `README.md`
       covering Cinematic Mode, then generate `/help.html` from it on CF Pages via the project
       template's CSP-safe `build-help.js` (JS in `public/help.js`, no inline `<script>`). Until
@@ -57,12 +88,25 @@ Cinematic Mode design, the phase list and every live-test result.
       delete that file.
 
 ### Open questions
-- Phase 4: a player's confirmation travels REMOTE to the GM, so each Go costs 1 + N messages
-  (N = players). Accept, or make confirmations opt-in?
+- ~~Phase 4 cost: accept 1 + N, or opt-in?~~ Opt-in (Andrew, 2026-11-13).
 - Help list wording "player-owned images (typically their character tokens)" may want to
   follow the Player Tokens rename (Andrew's call).
-- `#app` is 340px wide in a 300px popover; harmless now, but the likely root of the overflow.
+- ~~`#app` is 340px wide in a 300px popover~~ RESOLVED 2026-11-13 (measured): it shrinks to fit
+  (268px), but as a flex item of `body` it would not shrink below its min-content, so the
+  Cinematic top row with two long slot names (~315px) widened it and every row with it. Fixed
+  with `min-width: 0` on `#app`. Two earlier guesses (`.slot-row` sizing, `flex-wrap: nowrap`
+  on `.extension-section`) did not fix it; both kept as harmless and consistent.
+- **Popover layout (2026-11-13, live-checked, committed `aaec88a`):** fixed header (title row + Reset /
+  Player Tokens / Filter / Settings), everything else scrolls; 0.5rem side margins; thin themed
+  scrollbar with a stable gutter, which the header also reserves so the right edges align;
+  preset names 12px (`.owned`). Header pinned, no sideways shift, wider rows, focus rings all PASSED.
 - Catch-up for late joiners to a Cinematic shot.
+- **Unmerged branch `origin/claude/views-extension-notes-bmqu1w`** (noted 2026-11-13): one
+  commit, `e61d964` "Add feature notes: back button, Scene object links, list sorting", made by a
+  separate claude.ai web session (not this run of sessions). It adds 8 lines to
+  `FEATURES_BUGS.md` only, on top of `4def2b1`, so it fast-forwards cleanly onto main. Authored as
+  `Claude <noreply@anthropic.com>`, not the canonical identity. MERGED 2026-11-13 by fast-forward
+  (Andrew's call, authorship kept as is).
 
 ## 2026-08-14: Manifest-version injection bug fixed (portfolio-wide audit)
 
@@ -223,3 +267,6 @@ All 17 review issues resolved across 8 phases. Each phase built and tested clean
 - 2026-11-08 14:24 -- SESSION START: phase 3, Cinematic Mode strip (A/B slots, Preview, Go) + GM-verified Sync
 - 2026-11-08 20:30 -- SESSION END: phase 3 Cinematic Mode + Sync built, 32 live checks passed, committed and pushed (ec73de1); Sync View message costs measured; phase 3.5 scoped (Sync View jumps as synced shots); next is phase 4
 - 2026-11-08 20:53 -- SESSION START: phase 3.5, GM preset jumps with Sync View latched become a synced short shot (pending Andrew's go-ahead over phase 4)
+- 2026-11-08 21:34 -- SESSION END: phase 3.5 synced jumps (3b68767) + Player Tokens greyed when no player token (957a513), all 12 live checks passed, pushed; next is phase 4
+- 2026-11-13 11:56 -- SESSION START: resume Views; pulled origin, noted branch e61d964 (FEATURES_BUGS.md notes); next phase 4 confirmations + GM confidence monitor
+- 2026-11-13 22:43 -- SESSION END: phase 4 confirmations (opt-in) + monitor, all-or-nothing shots, popover layout fixes, all 13 live checks passed; pushed; next is the README-based help page
