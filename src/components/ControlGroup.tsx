@@ -21,8 +21,8 @@ export const ControlGroup: React.FC<PlayerControlProps> = ({
 }) =>
     viewports.map((viewport) => (
         <ViewportControl
+            key={viewport.id}
             {...{
-                key: viewport.id,
                 viewport,
                 deleteViewport,
                 jumpTo,

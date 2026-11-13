@@ -216,6 +216,7 @@ const Content = () => {
                         ?.filter(({ id }) => !filteredPlayerIds.includes(id))
                         .map((player) => (
                             <ControlGroup
+                                key={player.id}
                                 {...{
                                     currentUser,
                                     deleteViewport,
@@ -223,7 +224,6 @@ const Content = () => {
                                     viewports: presetsByPlayer.get(player.id) ?? [],
                                     jumpTo,
                                     cinematicFor,
-                                    key: player.id,
                                 }}
                             />
                         ))}
