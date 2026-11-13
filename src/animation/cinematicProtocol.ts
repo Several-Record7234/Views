@@ -19,6 +19,11 @@ export interface CinematicShotMessage {
     easeIn: boolean;
     /** The sender paused its latched Sync View for this shot; only the sender's own client acts on it. */
     resumeSyncView: boolean;
+    /**
+     * The GM opted in to confirmations: every other client replies once when the
+     * shot ends. Optional so a shot from an older sender still validates.
+     */
+    confirm?: boolean;
 }
 
 /**
@@ -66,8 +71,57 @@ export const isCinematicMessage = (value: unknown): value is CinematicMessage =>
         isBox(message.to) &&
         Number.isFinite(message.durationMs) &&
         typeof message.easeIn === 'boolean' &&
-        typeof message.resumeSyncView === 'boolean'
+        typeof message.resumeSyncView === 'boolean' &&
+        (message.confirm === undefined || typeof message.confirm === 'boolean')
     );
+};
+
+// Confirmations (opt-in per Go): each other client replies once per shot, when
+// it ends, so a confirmed Go costs 1 + N messages for N other clients. Sent
+// REMOTE (the SDK cannot address one connection); only the GM's popover listens.
+export const confirmationChannel = 'dev.views/confirm';
+
+/**
+ * How the shot ended on the replying client. `stopped`: halted by the GM (Stop,
+ * or a GM's synced jump). A player cannot leave a GM's shot early: their own
+ * jumps are refused while it plays, and a pan is overridden by its next frame.
+ */
+export type ConfirmationOutcome = 'completed' | 'stopped' | 'failed';
+
+export interface ShotConfirmation {
+    kind: 'confirm';
+    id: string;
+    outcome: ConfirmationOutcome;
+}
+
+const confirmationOutcomes: readonly string[] = ['completed', 'stopped', 'failed'];
+
+export const isShotConfirmation = (value: unknown): value is ShotConfirmation => {
+    if (typeof value !== 'object' || value === null) return false;
+    const message = value as Record<string, unknown>;
+    return (
+        message.kind === 'confirm' &&
+        typeof message.id === 'string' &&
+        typeof message.outcome === 'string' &&
+        confirmationOutcomes.includes(message.outcome)
+    );
+};
+
+/** What cut a shot short on this client, recorded just before the cancel. */
+export type ShotInterruption = 'stop' | 'gm-jump' | 'newer-shot';
+
+/**
+ * The reply for a shot that has ended, or null for none. A shot replaced by the
+ * GM's next shot sends nothing: the GM's monitor has already moved on to it.
+ */
+export const confirmationOutcome = (
+    result: 'completed' | 'cancelled' | 'failed',
+    interruption: ShotInterruption | null,
+): ConfirmationOutcome | null => {
+    if (result === 'completed') return 'completed';
+    if (result === 'failed') return 'failed';
+    if (interruption === 'newer-shot') return null;
+    return 'stopped';
 };
 
 /** Minimal roster entry: the two Party fields the trust check reads. */

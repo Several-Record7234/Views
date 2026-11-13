@@ -3,12 +3,15 @@ import {
   CinematicShotMessage,
   RosterEntry,
   SyncedJumpMessage,
+  confirmationOutcome,
   isCinematicMessage,
+  isShotConfirmation,
   shouldHonourCinematic,
   syncedJumpArea,
   toCinematicShot,
   toSyncedJumpShot,
 } from "../animation/cinematicProtocol";
+import { isRecallRefused } from "../animation/recallProtocol";
 
 const shot: CinematicShotMessage = {
   kind: "shot",
@@ -133,5 +136,63 @@ describe("synced jump", () => {
     expect(area.min.y).toBeCloseTo(25);
     expect(area.max.x).toBeCloseTo(150);
     expect(area.max.y).toBeCloseTo(75);
+  });
+});
+
+describe("confirm flag on a shot", () => {
+  it("accepts a shot with or without it (older senders omit it)", () => {
+    expect(isCinematicMessage({ ...shot, confirm: true })).toBe(true);
+    expect(isCinematicMessage({ ...shot, confirm: false })).toBe(true);
+    expect(isCinematicMessage(shot)).toBe(true);
+  });
+
+  it("rejects a non-boolean flag", () => {
+    expect(isCinematicMessage({ ...shot, confirm: "yes" })).toBe(false);
+  });
+});
+
+describe("isShotConfirmation", () => {
+  it("accepts each outcome", () => {
+    for (const outcome of ["completed", "stopped", "failed"]) {
+      expect(isShotConfirmation({ kind: "confirm", id: "s1", outcome })).toBe(true);
+    }
+  });
+
+  it("rejects unknown outcomes and malformed replies", () => {
+    expect(isShotConfirmation({ kind: "confirm", id: "s1", outcome: "waiting" })).toBe(false);
+    expect(isShotConfirmation({ kind: "confirm", id: "s1", outcome: "interrupted" })).toBe(false);
+    expect(isShotConfirmation({ kind: "confirm", outcome: "completed" })).toBe(false);
+    expect(isShotConfirmation({ kind: "stop", id: "s1", outcome: "completed" })).toBe(false);
+    expect(isShotConfirmation(null)).toBe(false);
+  });
+});
+
+describe("confirmationOutcome", () => {
+  it("reports a completed or failed shot as such, whatever was recorded", () => {
+    expect(confirmationOutcome("completed", null)).toBe("completed");
+    expect(confirmationOutcome("completed", "stop")).toBe("completed");
+    expect(confirmationOutcome("failed", "stop")).toBe("failed");
+  });
+
+  it("reports a GM's Stop or synced jump as stopped", () => {
+    expect(confirmationOutcome("cancelled", "stop")).toBe("stopped");
+    expect(confirmationOutcome("cancelled", "gm-jump")).toBe("stopped");
+  });
+
+  it("treats a cancel with no recorded cause as stopped", () => {
+    expect(confirmationOutcome("cancelled", null)).toBe("stopped");
+  });
+
+  it("sends nothing when the GM's next shot replaced it", () => {
+    expect(confirmationOutcome("cancelled", "newer-shot")).toBeNull();
+  });
+});
+
+describe("isRecallRefused", () => {
+  it("accepts the Cinematic refusal and nothing else", () => {
+    expect(isRecallRefused({ kind: "refused", reason: "cinematic" })).toBe(true);
+    expect(isRecallRefused({ kind: "refused" })).toBe(false);
+    expect(isRecallRefused({ kind: "recall", reason: "cinematic" })).toBe(false);
+    expect(isRecallRefused(null)).toBe(false);
   });
 });

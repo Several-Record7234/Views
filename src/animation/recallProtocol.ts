@@ -58,3 +58,18 @@ export const isPresenceMessage = (value: unknown): value is PresenceMessage => {
     const kind = (value as Record<string, unknown> | null)?.kind;
     return typeof value === 'object' && value !== null && (kind === 'ping' || kind === 'ready');
 };
+
+// Background page to its own popover: a recall it did not play. Its own channel,
+// so the background page never hears it back as a malformed recall. Always LOCAL.
+export const recallRefusedChannel = 'dev.views/recall-refused';
+
+/** `cinematic`: a GM's Cinematic shot is playing, and shots are all-or-nothing. */
+export interface RecallRefused {
+    kind: 'refused';
+    reason: 'cinematic';
+}
+
+export const isRecallRefused = (value: unknown): value is RecallRefused => {
+    const message = value as Record<string, unknown> | null;
+    return typeof message === 'object' && message !== null && message.kind === 'refused' && message.reason === 'cinematic';
+};

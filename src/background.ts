@@ -6,15 +6,21 @@ import { ShotTarget, createAnimator } from './animation/animator';
 import { AnimationSettings, animationSettingsId, decodeAnimationSettings } from './animation/settings';
 import {
     PresenceMessage,
+    RecallRefused,
     epochNow,
     isPresenceMessage,
     isRecallRequest,
     presenceChannel,
     recallChannel,
+    recallRefusedChannel,
 } from './animation/recallProtocol';
 import {
+    ShotConfirmation,
+    ShotInterruption,
     SyncedJumpMessage,
     cinematicChannel,
+    confirmationChannel,
+    confirmationOutcome,
     isCinematicMessage,
     shouldHonourCinematic,
     syncedJumpArea,
@@ -33,6 +39,22 @@ let currentTiming: { firstFrameAt: number | null } = { firstFrameAt: null };
 
 /** The Cinematic shot now playing, if any, so a Stop for an older shot is ignored. */
 let runningCinematicId: string | null = null;
+
+/**
+ * The running shot is a GM's, from another client. Its shots are all-or-nothing:
+ * a pan is overridden by the next frame, and our own recalls are refused.
+ */
+let runningRemoteShot = false;
+
+/** What cut the running shot short, recorded just before the cancel, so its confirmation can say. */
+let interruption: { id: string; by: ShotInterruption } | null = null;
+
+const recordInterruption = (by: ShotInterruption) => {
+    if (runningCinematicId !== null) interruption = { id: runningCinematicId, by };
+};
+
+const interruptionOf = (shotId: string): ShotInterruption | null =>
+    interruption?.id === shotId ? interruption.by : null;
 
 /** Our popover paused this GM's latched Sync View for a shot; turn it back on when the shot ends. */
 let syncViewToResume = false;
@@ -124,6 +146,14 @@ OBR.onReady(async () => {
             return;
         }
         const request = event.data;
+        if (runningCinematicId !== null && runningRemoteShot) {
+            console.warn('[Views] jump refused: a GM Cinematic shot is playing');
+            const refused: RecallRefused = { kind: 'refused', reason: 'cinematic' };
+            OBR.broadcast
+                .sendMessage(recallRefusedChannel, refused, { destination: 'LOCAL' })
+                .catch((error: unknown) => console.error('[Views] could not report the refused jump', error));
+            return;
+        }
         try {
             if (await shouldSyncJump()) {
                 await startSyncedJump(request.to);
@@ -172,11 +202,16 @@ OBR.onReady(async () => {
             return;
         }
         if (message.kind === 'stop') {
-            if (runningCinematicId === message.id) animator.cancel();
+            if (runningCinematicId === message.id) {
+                recordInterruption('stop');
+                animator.cancel();
+            }
             return;
         }
         currentTiming = { firstFrameAt: null };
+        recordInterruption(message.kind === 'shot' ? 'newer-shot' : 'gm-jump');
         runningCinematicId = message.id;
+        runningRemoteShot = message.kind === 'shot' && event.connectionId !== ownConnectionId;
         // Held here, not per message: a second Go mid-shot finds Sync View already
         // off, so its own flag is false, yet the first shot's pause still needs undoing.
         if (message.kind === 'shot' && event.connectionId === ownConnectionId && message.resumeSyncView) {
@@ -186,6 +221,17 @@ OBR.onReady(async () => {
         const result = await animator.play(message.kind === 'shot' ? toCinematicShot(message) : toSyncedJumpShot(message));
         if (result.outcome === 'failed') console.error(`[Views] ${label} failed`, message.id, result.error);
         if (import.meta.env.DEV) console.log(`[Views] ${label}`, { id: message.id, outcome: result.outcome });
+        // One reply per confirmed shot, never for our own (the GM's client is not on its own monitor).
+        if (message.kind === 'shot' && message.confirm && event.connectionId !== ownConnectionId) {
+            const outcome = confirmationOutcome(result.outcome, interruptionOf(message.id));
+            if (outcome) {
+                const reply: ShotConfirmation = { kind: 'confirm', id: message.id, outcome };
+                OBR.broadcast
+                    .sendMessage(confirmationChannel, reply, { destination: 'REMOTE' })
+                    .catch((error: unknown) => console.error('[Views] could not confirm the Cinematic shot', error));
+            }
+        }
+        if (interruption?.id === message.id) interruption = null;
         // Superseded by a newer shot or synced jump: its end will resume Sync View.
         if (runningCinematicId !== message.id && runningCinematicId !== null) return;
         runningCinematicId = null;
