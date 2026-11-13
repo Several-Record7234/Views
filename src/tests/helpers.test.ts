@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { uniqueById } from "../helper/helpers";
 import {
   metadataId,
   isStarredBox,
@@ -291,5 +292,16 @@ describe("restoreDamagedLegacy", () => {
   it("would revert a correct migration, so the caller must gate it to one run", () => {
     const correct = { ...damaged, playerId: "owner" };
     expect(restoreDamagedLegacy([correct], [legacy]).restoredCount).toBe(1);
+  });
+});
+
+describe("uniqueById", () => {
+  it("keeps the first entry per id, in order", () => {
+    const players = [
+      { id: "gm", connectionId: "c1" },
+      { id: "p1", connectionId: "c2" },
+      { id: "gm", connectionId: "c3" },
+    ];
+    expect(uniqueById(players).map(({ connectionId }) => connectionId)).toEqual(["c1", "c2"]);
   });
 });

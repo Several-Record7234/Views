@@ -104,7 +104,7 @@ describe("interpolate", () => {
 
 describe("animation settings codec", () => {
   it("round-trips every field", () => {
-    const settings = { functionalMs: 350, cinematicMs: 6000, cinematicEaseIn: false };
+    const settings = { functionalMs: 350, cinematicMs: 6000, cinematicEaseIn: false, cinematicConfirm: true };
     expect(decodeAnimationSettings(encodeAnimationSettings(settings))).toEqual({
       settings,
       writable: true,
@@ -113,7 +113,13 @@ describe("animation settings codec", () => {
 
   it("stays small: one-letter keys, whole numbers", () => {
     const encoded = JSON.stringify(encodeAnimationSettings(defaultAnimationSettings));
-    expect(encoded).toBe('{"v":1,"f":540,"d":3000,"i":1}');
+    expect(encoded).toBe('{"v":1,"f":540,"d":3000,"i":1,"c":0}');
+  });
+
+  it("reads a Room saved before confirmations existed as confirmations off", () => {
+    const { settings, writable } = decodeAnimationSettings({ v: 1, f: 540, d: 3000, i: 1 });
+    expect(settings.cinematicConfirm).toBe(false);
+    expect(writable).toBe(true);
   });
 
   it("uses defaults and allows writes when the Room has nothing yet", () => {

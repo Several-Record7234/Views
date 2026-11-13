@@ -34,27 +34,27 @@ export const ViewportControl: React.FC<ViewportControlProps> = ({
                 <Button
                     aria-label={`Go to viewport: ${viewport.name}`}
                     onClick={() => jumpTo(viewport)}
-                    className={`wide-cell owned ${slotClass}`}
+                    className={`wide-cell owned slot-row ${slotClass}`}
                     style={{ borderColor: color }}>
-                    {cinematic.slot === 'start' && <Icon name="play_arrow" size="small" />}
-                    {cinematic.slot === 'end' && <Icon name="stop" size="small" />}
-                    {viewport.name}
+                    {cinematic.slot === 'start' && <Icon name="shot_start" size="small" />}
+                    <span className="slot-name">{viewport.name}</span>
+                    {cinematic.slot === 'end' && <Icon name="shot_end" size="small" />}
                 </Button>
                 <Button
                     className={`narrowest-cell ${cinematic.slot === 'start' ? 'enabled' : ''}`}
-                    title="Set as start"
-                    aria-label={`Set ${viewport.name} as start`}
+                    title={cinematic.slot === 'start' ? 'Clear start' : 'Set as start'}
+                    aria-label={cinematic.slot === 'start' ? 'Clear start' : `Set ${viewport.name} as start`}
                     aria-pressed={cinematic.slot === 'start'}
                     onClick={cinematic.onSetStart}>
-                    <Icon name="play_arrow" size="small" />
+                    <Icon name="shot_start" size="small" />
                 </Button>
                 <Button
                     className={`narrowest-cell ${cinematic.slot === 'end' ? 'enabled' : ''}`}
-                    title="Set as end"
-                    aria-label={`Set ${viewport.name} as end`}
+                    title={cinematic.slot === 'end' ? 'Clear end' : 'Set as end'}
+                    aria-label={cinematic.slot === 'end' ? 'Clear end' : `Set ${viewport.name} as end`}
                     aria-pressed={cinematic.slot === 'end'}
                     onClick={cinematic.onSetEnd}>
-                    <Icon name="stop" size="small" />
+                    <Icon name="shot_end" size="small" />
                 </Button>
             </li>
         );

@@ -64,26 +64,32 @@ export const releaseSyncView = async (): Promise<boolean> => {
     return true;
 };
 
+/**
+ * `shotId` is chosen by the caller so a confirmation monitor can be in place
+ * before the shot goes out. `confirm` asks every other client to reply when it ends.
+ */
 export const playCinematic = async (
+    shotId: string,
     from: Box,
     to: Box,
     settings: AnimationSettings,
     audience: 'preview' | 'everyone',
     resumeSyncView: boolean,
-): Promise<string> => {
+    confirm: boolean,
+): Promise<void> => {
     const message: CinematicShotMessage = {
         kind: 'shot',
-        id: crypto.randomUUID(),
+        id: shotId,
         from,
         to,
         durationMs: settings.cinematicMs,
         easeIn: settings.cinematicEaseIn,
         resumeSyncView,
+        confirm,
     };
     await OBR.broadcast.sendMessage(cinematicChannel, message, {
         destination: audience === 'preview' ? 'LOCAL' : 'ALL',
     });
-    return message.id;
 };
 
 /** ALL, so it also halts a Preview on this client; other clients ignore an id they are not playing. */

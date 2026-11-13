@@ -65,6 +65,27 @@ export const AnimationSettingsPanel = () => {
                         }></span>
                 </label>
             </div>
+            <div className="flex items-center justify-between gap-2">
+                <span id="anim-confirm-label">Ask players to confirm each Go</span>
+                <label className="switch">
+                    <input
+                        type="checkbox"
+                        checked={settings.cinematicConfirm}
+                        disabled={disabled}
+                        onChange={(ev) => {
+                            saveOrLog({ cinematicConfirm: ev.target.checked }).catch(() => undefined);
+                        }}
+                        aria-labelledby="anim-confirm-label"
+                    />
+                    <span
+                        className="slider round"
+                        style={
+                            settings.cinematicConfirm
+                                ? { backgroundColor: 'var(--color-lavender)', borderColor: 'var(--color-lavender)' }
+                                : { borderColor: 'var(--color-lavender)' }
+                        }></span>
+                </label>
+            </div>
             {loaded && !writable ? (
                 <div className="background-notice" role="status">
                     These settings were saved by a newer version of Views and can't be changed here.

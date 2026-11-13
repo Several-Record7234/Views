@@ -1,5 +1,5 @@
 export type IconProps = {
-    name: 'filter_list' | 'help' | 'delete' | 'settings' | 'clapperboard' | 'play_arrow' | 'stop' | 'swap_horiz';
+    name: 'filter_list' | 'help' | 'delete' | 'settings' | 'clapperboard' | 'play_arrow' | 'stop' | 'swap_horiz' | 'check' | 'close' | 'question_mark' | 'shot_start' | 'shot_end';
     /** small 16px, default 20px, large 24px (1:1 with the 24-unit viewBox, so crisp edges). */
     size?: 'small' | 'large';
 };
@@ -18,6 +18,14 @@ const PATHS: Record<IconProps['name'], string> = {
     play_arrow: 'M8 5v14l11-7z',
     swap_horiz: 'M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z',
     stop: 'M6 6h12v12H6z',
+    check: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+    // Shot slots (Andrew's design, 2026-11-13): start is an arrow springing out of a
+    // left bar, end an arrow hitting a right bar. Play/stop are kept for Go/Stop.
+    shot_start: 'M4 5h2v14H4zM6 11h10v2H6zM15 7l6 5-6 5z',
+    shot_end: 'M3 11h10v2H3zM12 7l6 5-6 5zM18 5h2v14h-2z',
+    close: 'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+    question_mark:
+        'M11.07 12.85c.77-1.39 2.25-2.21 3.11-3.44.91-1.29.4-3.7-2.18-3.7-1.69 0-2.52 1.28-2.87 2.34L6.54 6.96C7.25 4.83 9.18 3 11.99 3c2.35 0 3.96 1.07 4.78 2.41.7 1.15 1.11 3.3.03 4.9-1.2 1.77-2.35 2.31-2.97 3.45-.25.46-.35.76-.35 2.24h-2.89c-.01-.78-.13-2.05.48-3.15zM14 20c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2z',
     settings:
         'M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z',
 };

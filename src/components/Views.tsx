@@ -14,6 +14,8 @@ import { useBackgroundStatus } from '../context/useBackgroundStatus.ts';
 import { watchBackground } from '../viewport/watchBackground.ts';
 import { useCinematic } from '../viewport/useCinematic.ts';
 import { CinematicStrip } from './CinematicStrip.tsx';
+import { useRefusedRecallNotice } from '../viewport/useRefusedRecallNotice';
+import { uniqueById } from '../helper/helpers';
 
 export const Views = () => {
     const { isReady } = useSceneReady();
@@ -42,11 +44,13 @@ const Content = () => {
 
     const backgroundStatus = useBackgroundStatus((store) => store.status);
     useEffect(() => watchBackground(), []);
+    useRefusedRecallNotice();
 
     const [draftViewportName, setDraftViewportName] = useState<string>('');
     const { players } = usePartyContext();
     const currentUser = usePlayerContext();
-    const allPlayers = [currentUser, ...(players ?? [])];
+    // Same account in two browsers = two connections, one id: list it once (see uniqueById).
+    const allPlayers = uniqueById([currentUser, ...(players ?? [])]);
     const [showFilters, setShowFilters] = useState<boolean>(false);
     const [showAnimationSettings, setShowAnimationSettings] = useState<boolean>(false);
     const isGM = currentUser.role === 'GM';
@@ -58,8 +62,13 @@ const Content = () => {
     const cinematicFor = showCinematic
         ? (viewport: (typeof starredViewports)[number]) => ({
               slot: cinematic.slotOf(viewport.id),
-              onSetStart: () => cinematic.setPreset('start', viewport.id),
-              onSetEnd: () => cinematic.setPreset('end', viewport.id),
+              // A second click on the picked marker clears that slot.
+              onSetStart: () =>
+                  cinematic.slotOf(viewport.id) === 'start'
+                      ? cinematic.clear('start')
+                      : cinematic.setPreset('start', viewport.id),
+              onSetEnd: () =>
+                  cinematic.slotOf(viewport.id) === 'end' ? cinematic.clear('end') : cinematic.setPreset('end', viewport.id),
           })
         : undefined;
 
@@ -81,9 +90,10 @@ const Content = () => {
     }
 
     return (
-        <div>
-            <TitleRow />
-            <section className="extension-section">
+        // The header (title and top row) stays put; everything below it scrolls.
+        <div className="flex h-full min-h-0 flex-col">
+            <header className="views-pane shrink-0 px-2 pt-4 pb-0.5">
+                <TitleRow />
                 <div className="row" key="default">
                     <Button onClick={reset} className="wide-cell" aria-label="Reset View">
                         Reset View
@@ -113,149 +123,156 @@ const Content = () => {
                         </Button>
                     )}
                 </div>
-                {isGM && (
-                    <CinematicStrip
-                        active={showCinematic}
-                        available={cinematicAvailable}
-                        unavailableReason={
-                            backgroundStatus === 'missing'
-                                ? "Cinematic Mode unavailable: Views' background task is absent."
-                                : null
-                        }
-                        onToggle={() => setCinematicOn((prev) => !prev)}
-                        startLabel={cinematic.startLabel}
-                        endLabel={cinematic.endLabel}
-                        onSwap={cinematic.swap}
-                        onCaptureStart={() => cinematic.capture('start')}
-                        onCaptureEnd={() => cinematic.capture('end')}
-                        onPreview={cinematic.preview}
-                        onGo={cinematic.go}
-                        onStop={cinematic.stop}
-                        canStop={cinematic.canStop}
-                        notice={cinematic.notice}
-                    />
-                )}
-                {showFilters && (
-                    <div className="filter">
-                        <div className="filters-section flex-row">
-                            {allPlayers?.map((player) => (
-                                <label className="switch" key={player.id}>
-                                    <span className="visually-hidden">
-                                        Toggle player {player.name}
-                                    </span>
+            </header>
+            <div className="views-pane views-scroll min-h-0 flex-1 px-2 pt-0.5 pb-4">
+                <section className="extension-section">
+                    {isGM && (
+                        <CinematicStrip
+                            active={showCinematic}
+                            available={cinematicAvailable}
+                            unavailableReason={
+                                backgroundStatus === 'missing'
+                                    ? "Cinematic Mode unavailable: Views' background task is absent."
+                                    : null
+                            }
+                            onToggle={() => setCinematicOn((prev) => !prev)}
+                            startLabel={cinematic.startLabel}
+                            endLabel={cinematic.endLabel}
+                            onSwap={cinematic.swap}
+                            onClearStart={() => cinematic.clear('start')}
+                            onClearEnd={() => cinematic.clear('end')}
+                            onCaptureStart={() => cinematic.capture('start')}
+                            onCaptureEnd={() => cinematic.capture('end')}
+                            onPreview={cinematic.preview}
+                            onGo={cinematic.go}
+                            onStop={cinematic.stop}
+                            canStop={cinematic.canStop}
+                            notice={cinematic.notice}
+                            monitor={cinematic.monitor}
+                        />
+                    )}
+                    {showFilters && (
+                        <div className="filter">
+                            <div className="filters-section flex-row">
+                                {allPlayers?.map((player) => (
+                                    <label className="switch" key={player.id}>
+                                        <span className="visually-hidden">
+                                            Toggle player {player.name}
+                                        </span>
 
+                                        <input
+                                            type="checkbox"
+                                            checked={!filteredPlayerIds.includes(player.id)}
+                                            onChange={(ev) => {
+                                                filterPlayer(player.id, ev.target.checked);
+                                            }}
+                                            aria-labelledby={`playerToggleLabel-${player.id}`}
+                                        />
+                                        <span
+                                            id={`playerToggleLabel-${player.id}`}
+                                            className="slider round"
+                                            style={
+                                                !filteredPlayerIds.includes(player.id)
+                                                    ? {
+                                                          backgroundColor: player.color,
+                                                          borderColor: player.color,
+                                                      }
+                                                    : { borderColor: player.color }
+                                            }></span>
+                                    </label>
+                                ))}
+                            </div>
+                            <div className="filters-section flex-row">
+                                <span>Absent players:</span>
+                                <label className="switch">
+                                    <span className="visually-hidden">Toggle absent players</span>
                                     <input
                                         type="checkbox"
-                                        checked={!filteredPlayerIds.includes(player.id)}
+                                        checked={showAbsentPlayers}
                                         onChange={(ev) => {
-                                            filterPlayer(player.id, ev.target.checked);
+                                            filterAbsent(ev.target.checked);
                                         }}
-                                        aria-labelledby={`playerToggleLabel-${player.id}`}
+                                        aria-labelledby="absentToggleLabel"
                                     />
                                     <span
-                                        id={`playerToggleLabel-${player.id}`}
+                                        id="absentToggleLabel"
                                         className="slider round"
                                         style={
-                                            !filteredPlayerIds.includes(player.id)
+                                            showAbsentPlayers
                                                 ? {
-                                                      backgroundColor: player.color,
-                                                      borderColor: player.color,
+                                                      backgroundColor: 'var(--color-crust)',
+                                                      borderColor: 'var(--color-crust)',
                                                   }
-                                                : { borderColor: player.color }
+                                                : { borderColor: 'var(--color-crust)' }
                                         }></span>
                                 </label>
-                            ))}
+                            </div>
                         </div>
-                        <div className="filters-section flex-row">
-                            <span>Absent players:</span>
-                            <label className="switch">
-                                <span className="visually-hidden">Toggle absent players</span>
-                                <input
-                                    type="checkbox"
-                                    checked={showAbsentPlayers}
-                                    onChange={(ev) => {
-                                        filterAbsent(ev.target.checked);
-                                    }}
-                                    aria-labelledby="absentToggleLabel"
-                                />
-                                <span
-                                    id="absentToggleLabel"
-                                    className="slider round"
-                                    style={
-                                        showAbsentPlayers
-                                            ? {
-                                                  backgroundColor: 'var(--color-crust)',
-                                                  borderColor: 'var(--color-crust)',
-                                              }
-                                            : { borderColor: 'var(--color-crust)' }
-                                    }></span>
-                            </label>
-                        </div>
-                    </div>
-                )}
-                {isGM && showAnimationSettings && <AnimationSettingsPanel />}
-            </section>
-            <ul className="extension-section">
-                {allPlayers
-                    ?.filter(({ id }) => !filteredPlayerIds.includes(id))
-                    .map((player) => (
-                        <ControlGroup
-                            {...{
-                                currentUser,
-                                deleteViewport,
-                                color: player.color,
-                                viewports: presetsByPlayer.get(player.id) ?? [],
-                                jumpTo,
-                                cinematicFor,
-                                key: player.id,
-                            }}
-                        />
-                    ))}
-                <ControlGroup
-                    {...{
-                        currentUser,
-                        deleteViewport,
-                        viewports: unownedPresets,
-                        jumpTo,
-                        cinematicFor,
-                    }}
-                />
-            </ul>
-            <section className="extension-section">
-                {metadataError && (
-                    <div className="metadata-error" role="alert">
-                        This Scene's saved viewports could not be read and may be corrupted. Saving
-                        is disabled to avoid overwriting them. Try reloading the Scene.
-                    </div>
-                )}
-                <form
-                    className="row"
-                    onSubmit={async (e) => {
-                        e.preventDefault();
-                        await starViewport(draftViewportName);
-                        setDraftViewportName('');
-                    }}>
-                    <input
-                        aria-label="Viewport Name"
-                        placeholder="Enter viewport name"
-                        value={draftViewportName}
-                        onChange={(ev) => setDraftViewportName(ev.target.value)}
-                        className="wide-cell"
-                        disabled={metadataError}
+                    )}
+                    {isGM && showAnimationSettings && <AnimationSettingsPanel />}
+                </section>
+                <ul className="extension-section">
+                    {allPlayers
+                        ?.filter(({ id }) => !filteredPlayerIds.includes(id))
+                        .map((player) => (
+                            <ControlGroup
+                                {...{
+                                    currentUser,
+                                    deleteViewport,
+                                    color: player.color,
+                                    viewports: presetsByPlayer.get(player.id) ?? [],
+                                    jumpTo,
+                                    cinematicFor,
+                                    key: player.id,
+                                }}
+                            />
+                        ))}
+                    <ControlGroup
+                        {...{
+                            currentUser,
+                            deleteViewport,
+                            viewports: unownedPresets,
+                            jumpTo,
+                            cinematicFor,
+                        }}
                     />
-                    <Button
-                        aria-label="Save this viewport"
-                        className="narrow-cell"
-                        type="submit"
-                        disabled={
-                            metadataError ||
-                            !draftViewportName ||
-                            starredViewports.map(({ name }) => name).includes(draftViewportName)
-                        }>
-                        OK
-                    </Button>
-                </form>
-            </section>
+                </ul>
+                <section className="extension-section">
+                    {metadataError && (
+                        <div className="metadata-error" role="alert">
+                            This Scene's saved viewports could not be read and may be corrupted. Saving
+                            is disabled to avoid overwriting them. Try reloading the Scene.
+                        </div>
+                    )}
+                    <form
+                        className="row"
+                        onSubmit={async (e) => {
+                            e.preventDefault();
+                            await starViewport(draftViewportName);
+                            setDraftViewportName('');
+                        }}>
+                        <input
+                            aria-label="Viewport Name"
+                            placeholder="Enter viewport name"
+                            value={draftViewportName}
+                            onChange={(ev) => setDraftViewportName(ev.target.value)}
+                            className="wide-cell"
+                            disabled={metadataError}
+                        />
+                        <Button
+                            aria-label="Save this viewport"
+                            className="narrow-cell"
+                            type="submit"
+                            disabled={
+                                metadataError ||
+                                !draftViewportName ||
+                                starredViewports.map(({ name }) => name).includes(draftViewportName)
+                            }>
+                            OK
+                        </Button>
+                    </form>
+                </section>
+            </div>
         </div>
     );
 };

@@ -323,6 +323,65 @@ non-GM player now in the party (same predicate as the jump, `isPlayerOwnedImage`
 11. A player drops a token in: enables without reopening; delete it: greys again.
 12. The token's owner leaves the Room: greys; rejoins: enables.
 
+## Phase 4: confirmations + GM confidence monitor (BUILT 2026-11-13, NOT yet live-tested)
+
+Decisions (Andrew, 2026-11-13): **opt-in**, as a switch in the GM settings panel saved to the
+Room ("Ask players to confirm each Go", `dev.views/anim` key `c`, default off, no format bump:
+an absent key decodes as off). Monitor = one icon per other client, in party order, hover shows
+"<name>: <status>", in a row directly under Preview/Go/Stop. Plain wording, icon per status:
+Waiting… (play), Arrived (tick), Stopped (stop), Failed (X), No response (?). The plan's earlier `sync off`
+outcome was dropped: players have no way to opt out of a shot, so it had nothing to report.
+- A confirmed Go sets `confirm: true` on the shot (optional field, so older senders validate).
+- Each other client's background page replies once when the shot ends, REMOTE on
+  `dev.views/confirm` (the SDK cannot address one connection). `stopped` = the GM's Stop or a GM
+  synced jump cut it; replaced by the GM's next shot
+  = no reply (the monitor has already moved on). The GM's own client never replies.
+- **Shots are all-or-nothing (Andrew, 2026-11-13):** a player's pan or Reset View is overridden by
+  the shot's next frame, and their own preset / Player Tokens recalls are REFUSED by their
+  background page while a GM's shot from another client plays. It tells its own popover (LOCAL
+  `dev.views/recall-refused`, no server cost), which raises an OBR WARNING toast "A GM Cinematic shot
+  is playing; your Views preset was skipped." (approved); a repeat click replaces it. Raised from the
+  popover, not the background page, because a background notification is unverified.
+  So the briefly-built `interrupted` / "Moved away" outcome was removed.
+- Slot iconography (Andrew's design): start = arrow springing from a left bar, end = arrow hitting
+  a right bar (slots, preset-row pickers, Current view); the end mark sits right of the name on
+  the end slot and its preset row, and both marks sit at the outside edges. Play/stop now sit on
+  Go/Stop, with labels. A filled slot is a button that clears it (hover shows "<name> (Click to clear)" if
+  truncated, else "Clear start/end"), and clicking a row's picked marker again clears that slot.
+- The GM's popover builds the monitor from a fresh `party.getPlayers()` BEFORE sending, listens
+  even while closed, and accepts a reply only from a connection on it (server-stamped
+  `connectionId`, so nobody can report for someone else). Deadline = Cinematic duration + 2s,
+  then the silent become No response; a late reply still replaces that. A Go that fails to send
+  clears the monitor. An unconfirmed Go clears it too; a Preview leaves it.
+- **Cost, PREDICTED only:** 1 + N sends per confirmed Go, and each REMOTE reply also reaches the
+  other players' popovers. Needs a capture: whether OBR bills a fan-out once or per recipient
+  decides the real figure.
+- Known gap: an older Views build saving the settings panel drops `c`, turning confirmations off.
+
+Live checks (GM + at least one player; two players for 6):
+PASSED 2026-11-13: 7-9 too. 10 MEASURED (GM socket, 6 other clients): 6 `dev.views/confirm`
+replies, one per sender, 179 bytes each, all `completed`; four within 20ms, two ~0.77s later, all
+inside the deadline. So a confirmed Go = 1 + N = 7 SENDS as predicted, but REMOTE fans each reply out
+to every other client: ~N + N^2 = 42 DELIVERIES. Which of the two OBR bills is Andrew's call.
+PASSED 2026-11-13: 1-6 (5: the GM's mid-shot preset click became a synced jump that replaced the
+shot on every client, as designed, since the pending Sync View re-latch counts as latched).
+1. Switch off (default): Go behaves as before; no monitor row; socket shows no `dev.views/confirm`.
+2. Switch on, Go: one play icon per player, then a tick at the shot's end. Hover shows "<name>: Arrived".
+3. Stop mid-shot: icons turn to the stop icon.
+4. Player clicks one of their own presets mid-shot: nothing moves, the shot plays on, the
+   player sees the skipped-jump toast, and the GM's icon ends as Arrived.
+5. GM clicks a preset mid-shot with Sync View latched (synced jump): Stopped.
+6. Player with the background page absent (or closed tab) shows ? after duration + 2s.
+   PASSED 2026-11-13, incidentally: a Firefox player whose Views could not load (Local Network
+   Access blocked localhost) showed No response on every confirmed Go.
+7. Second Go mid-shot: the monitor resets to the new shot; no stale icons from the first.
+8. Preview: no monitor change. Unconfirmed Go after a confirmed one: monitor clears.
+9. Icon order matches Views' player list.
+10. Capture `api/realtime/party` for one confirmed Go with 1 and 2 players: count messages.
+11. Click a filled start or end slot in the top row: it empties. Click a row's picked marker again: same.
+12. A long preset name truncated in a slot: hover shows the full name; a short one shows only "Clear start/end".
+13. Start and end marks sit at the outside edges in both slots and on the picked preset rows.
+
 ## Phases
 
 0. Migration fix + repair: done, needs live test. (approved)
@@ -330,7 +389,7 @@ non-GM player now in the party (same predicate as the jump, `isPlayerOwnedImage`
 1. Animation engine + GM settings: DONE 2026-11-07 (settings UI `a74d77a`, live tests 1-3 passed). (approved)
 2. Background-page animation spike: DONE 2026-11-07, background page + timer clock. (approved)
 3. Cinematic Mode + Sync (GM-verified A→B shots): DONE 2026-11-08. (approved)
-4. Confirmations + GM confidence monitor. Needs approval.
+4. Confirmations + GM confidence monitor: BUILT 2026-11-13 (opt-in), live test pending. (approved)
 5. Hardening: docs, help page, README, edge cases. Needs approval.
 
 ## Open questions for Andrew

@@ -10,6 +10,8 @@ export interface AnimationSettings {
     functionalMs: number;
     cinematicMs: number;
     cinematicEaseIn: boolean;
+    /** Players confirm each Go to the GM's monitor (1 + N messages per Go, so opt-in). */
+    cinematicConfirm: boolean;
 }
 
 // Typed against the interface, so adding a field fails to compile until it has a key.
@@ -17,6 +19,7 @@ const shortKeys: Record<keyof AnimationSettings, string> = {
     functionalMs: 'f',
     cinematicMs: 'd',
     cinematicEaseIn: 'i',
+    cinematicConfirm: 'c',
 };
 const VERSION_KEY = 'v';
 
@@ -25,6 +28,7 @@ export const defaultAnimationSettings: AnimationSettings = {
     functionalMs: 540,
     cinematicMs: 3000,
     cinematicEaseIn: true,
+    cinematicConfirm: false,
 };
 
 export const durationLimits = {
@@ -50,13 +54,17 @@ export const decodeAnimationSettings = (raw: unknown): { settings: AnimationSett
     if (record[VERSION_KEY] !== FORMAT_VERSION) {
         return { settings: { ...defaultAnimationSettings }, writable: false };
     }
-    const easeInFlag = record[shortKeys.cinematicEaseIn];
+    const flag = (key: 'cinematicEaseIn' | 'cinematicConfirm'): boolean => {
+        const value = record[shortKeys[key]];
+        return value === 0 || value === 1 ? value === 1 : defaultAnimationSettings[key];
+    };
     return {
         settings: {
             functionalMs: clampDuration(record[shortKeys.functionalMs], 'functionalMs'),
             cinematicMs: clampDuration(record[shortKeys.cinematicMs], 'cinematicMs'),
-            cinematicEaseIn:
-                easeInFlag === 0 || easeInFlag === 1 ? easeInFlag === 1 : defaultAnimationSettings.cinematicEaseIn,
+            cinematicEaseIn: flag('cinematicEaseIn'),
+            // Absent in Rooms saved before confirmations existed: decodes as off, so no version bump.
+            cinematicConfirm: flag('cinematicConfirm'),
         },
         writable: true,
     };
@@ -68,4 +76,5 @@ export const encodeAnimationSettings = (settings: AnimationSettings): Record<str
     [shortKeys.functionalMs]: clampDuration(settings.functionalMs, 'functionalMs'),
     [shortKeys.cinematicMs]: clampDuration(settings.cinematicMs, 'cinematicMs'),
     [shortKeys.cinematicEaseIn]: settings.cinematicEaseIn ? 1 : 0,
+    [shortKeys.cinematicConfirm]: settings.cinematicConfirm ? 1 : 0,
 });

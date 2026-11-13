@@ -75,10 +75,31 @@ body {
   margin: 0;
 }
 
+/* Fills the popover; the header stays put and only .views-scroll scrolls. */
 #app {
-  margin: 1rem;
-  max-width: 340px;
-  width: 340px;
+  width: 100%;
+  height: 100vh;
+  /* A flex item of body never shrinks below its content by default, so the Cinematic
+     top row with two long slot names (~315px) widened #app past the popover and every
+     row followed (measured 2026-11-13). At 0 it takes the space it has and the slots
+     and rows truncate. */
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Both panes reserve the same thin scrollbar gutter, so the header's right edge lines
+   up with the list's, and nothing shifts sideways when the scrollbar appears. The
+   header reserves it by being a (never-scrolling) overflow box too. */
+.views-pane {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface2) transparent;
+  overflow-y: hidden;
+}
+
+.views-scroll {
+  overflow-y: auto;
 }
 
 html {
@@ -105,7 +126,10 @@ ul {
 .extension-section {
   display: flex;
   flex-direction: column;
-  flex-wrap: wrap;
+  /* Single-line on purpose: a wrapping column sizes its line to the widest row, so one
+     long preset name widened every row and scrolled the popover. Single-line, rows take
+     the section's own width and long names truncate. (It never wrapped: no height limit.) */
+  flex-wrap: nowrap;
   gap: 0.25rem;
 }
 
@@ -218,10 +242,13 @@ button.toggled {
   aspect-ratio: 1;
 }
 
+/* Preset rows (every mode). Names at 12px, matching the Cinematic slots, so a name reads
+   the same in both and long names fit better; other buttons stay at 14px. */
 .owned {
   border-width: 0.125rem;
   border-style: solid;
   border-radius: 0.5rem;
+  font-size: 0.75rem;
 }
 
 @keyframes pulse {
@@ -353,6 +380,7 @@ input:checked + .slider:before {
 .cinematic-slot {
   flex: 1 1 0;
   min-width: 0;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -371,6 +399,40 @@ input:checked + .slider:before {
 .cinematic-slot .icon {
   flex: 0 0 auto;
   fill: currentColor;
+}
+
+/* The name takes the slack, so the start/end markers sit at the outside edges. */
+.cinematic-slot .slot-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+}
+
+/* A long name must give way to the marker, never widen the row (it pushed the
+   popover into a horizontal scrollbar): the button and its content may shrink, and clip. */
+.slot-row {
+  /* Sized like .cinematic-slot, which truncates correctly: start from zero and take the
+     space left, instead of percentages resolved against a row whose width follows content. */
+  flex: 1 1 0;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.slot-row > .ellipsis {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.slot-row .slot-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .slot-empty {
@@ -396,6 +458,10 @@ input:checked + .slider:before {
 .cinematic-action {
   flex: 1 1 0;
   min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
 }
 
 .cinematic-notice {
@@ -403,6 +469,33 @@ input:checked + .slider:before {
   line-height: 1.4;
   color: var(--color-subtext1);
 }
+
+/* One icon per player (rarely more than 8), so it never wraps in the 300px popover. */
+.confirmation-monitor {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.confirmation {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  background-color: var(--color-surface0);
+  cursor: default;
+}
+
+.confirmation .icon {
+  fill: currentColor;
+}
+
+.confirmation-waiting { color: var(--color-overlay2); }
+.confirmation-completed { color: var(--color-green); }
+.confirmation-stopped { color: var(--color-yellow); }
+.confirmation-failed { color: var(--color-red); }
+.confirmation-no-response { color: var(--color-maroon); }
 
 /* ─── Metadata error notice ─── */
 .metadata-error {
